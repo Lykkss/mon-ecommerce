@@ -12,23 +12,40 @@
     <h1 class="text-xl font-bold">
       <a href="/" class="hover:underline">PokéCommerce</a>
     </h1>
-    <a href="/panier" class="hover:underline">
-      Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)
-    </a>
+    <div class="space-x-4">
+      <?php if (!empty($_SESSION['user_id'])): ?>
+        <a href="/logout" class="hover:underline">Déconnexion</a>
+        <a href="/panier" class="hover:underline">
+          Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)
+        </a>
+      <?php else: ?>
+        <a href="/login" class="hover:underline">Connexion</a>
+        <a href="/register" class="hover:underline">Inscription</a>
+      <?php endif; ?>
+    </div>
   </header>
 
   <main class="container mx-auto p-4">
     <?php
-      if (isset($product)) {
-        // page de détail
+      if (isset($login) && $login === true) {
+        include __DIR__ . '/login.php';
+
+      } elseif (isset($register) && $register === true) {
+        include __DIR__ . '/register.php';
+
+      } elseif (isset($product)) {
         include __DIR__ . '/show.php';
 
+      } elseif (isset($checkout) && $checkout === true) {
+        include __DIR__ . '/checkout.php';
+
+      } elseif (isset($orderSuccess) && $orderSuccess === true) {
+        include __DIR__ . '/order_success.php';
+
       } elseif (isset($items)) {
-        // page panier
         include __DIR__ . '/cart.php';
 
       } else {
-        // page d’accueil (grille)
         include __DIR__ . '/home.php';
       }
     ?>
