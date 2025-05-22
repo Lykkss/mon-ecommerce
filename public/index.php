@@ -24,6 +24,7 @@ $router->get('/produit/(?P<id>\d+)', 'HomeController@show');
 // … autres routes (panier, compte, etc.)
 
 // Lancement
+$router->post('/panier/ajouter', 'CartController@add');
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);
 ?>
   <header class="bg-blue-600 text-white p-4">
