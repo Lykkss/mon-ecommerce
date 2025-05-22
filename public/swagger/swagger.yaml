@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: Pokémon Commerce API
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8000
+paths:
+  /api/articles:
+    get:
+      summary: Liste des articles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
+components:
+  schemas:
+    Article:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        price:
+          type: number
