@@ -1,19 +1,54 @@
 <?php
 namespace App\Controllers;
 
+use App\Models\Product;
+
 class CartController
 {
-    public function add()
+    // Ajoute un item au panier (session)
+    public function add(): void
     {
-        session_start();
-        $id    = $_POST['product_id'] ?? null;
-        $qty   = max(1, (int)($_POST['quantity'] ?? 1));
-        if ($id) {
+        $id  = (int)($_POST['product_id'] ?? 0);
+        $qty = max(1, (int)($_POST['quantity'] ?? 1));
+
+        if ($id > 0) {
             if (!isset($_SESSION['cart'][$id])) {
                 $_SESSION['cart'][$id] = 0;
             }
             $_SESSION['cart'][$id] += $qty;
         }
+
         header('Location: ' . $_SERVER['HTTP_REFERER']);
+        exit;
+    }
+
+    // Affiche le panier
+    public function index(): void
+    {
+        $items = [];
+        $total = 0.0;
+
+        foreach ($_SESSION['cart'] ?? [] as $id => $qty) {
+            $prod = Product::find($id);
+            if ($prod) {
+                $prod['quantity'] = $qty;
+                $prod['subtotal'] = $qty * (float)$prod['price'];
+                $total += $prod['subtotal'];
+                $items[] = $prod;
+            }
+        }
+
+        require __DIR__ . '/../Views/layout.php';
+    }
+
+    // Supprime un item du panier
+    public function remove(): void
+    {
+        $id = (int)($_POST['product_id'] ?? 0);
+        if (isset($_SESSION['cart'][$id])) {
+            unset($_SESSION['cart'][$id]);
+        }
+        header('Location: /panier');
+        exit;
     }
 }

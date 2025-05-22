@@ -1,5 +1,5 @@
 <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-md overflow-hidden md:flex">
-  <?php if($product['image']): ?>
+  <?php if(!empty($product['image'])): ?>
     <img src="/assets/<?= htmlspecialchars($product['image']) ?>"
          alt="<?= htmlspecialchars($product['name']) ?>"
          class="w-full md:w-1/2 h-64 object-cover">
