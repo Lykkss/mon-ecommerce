@@ -40,6 +40,16 @@ class Invoice
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // app/Models/Invoice.php
+    public static function findById(int $id): ?array
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM invoices WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+
     /**
      * Retourne les lignes d’une facture
      */
@@ -47,7 +57,11 @@ class Invoice
     {
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT ii.product_id, p.title, ii.quantity, ii.unit_price
+            SELECT 
+            ii.product_id,
+            p.name        AS product_name,
+            ii.quantity,
+            ii.unit_price
             FROM invoice_items ii
             JOIN products p ON p.id = ii.product_id
             WHERE ii.invoice_id = ?

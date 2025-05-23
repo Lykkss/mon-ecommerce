@@ -1,7 +1,8 @@
 <?php
+// app/Views/layout.php
 use App\Models\User;
 
-// 1) Récupération de l’utilisateur courant
+// Récupération de l’utilisateur courant
 $currentUser = null;
 if (!empty($_SESSION['user_id'])) {
     $currentUser = User::findById((int) $_SESSION['user_id']);
@@ -9,24 +10,21 @@ if (!empty($_SESSION['user_id'])) {
 
 /**
  * Vérifie que l’avatar existe et renvoie un chemin absolu commençant par '/'
- *
- * @param string $relativePath  'assets/avatars/nomfichier.ext'
- * @return string|null          '/assets/avatars/nomfichier.ext' ou null
+ * @param string $relativePath
+ * @return string|null
  */
 function avatarUrl(string $relativePath): ?string {
     $path = ltrim($relativePath, '/');
-    $full  = __DIR__ . '/../../public/' . $path;
+    $full = __DIR__ . '/../../public/' . $path;
     return file_exists($full) ? '/' . $path : null;
 }
 
-// 2) Détermination de l’URL de l’avatar
+// Détermination de l’URL de l’avatar
 $avatarSrc = null;
 if ($currentUser && !empty($currentUser['avatar'])) {
     $avatarSrc = avatarUrl($currentUser['avatar']);
 }
-
-// 3) Fallback optionnel vers default.png (facultatif)
-// Si vous avez un default.png dans public/assets/avatars/
+// Fallback avatar par défaut
 $fallback = '/assets/avatars/default.png';
 if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fallback)) {
     $avatarSrc = $fallback;
@@ -51,7 +49,6 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
              class="h-8 w-8 rounded-full object-cover">
       <?php endif; ?>
     </div>
-
     <nav class="space-x-4">
       <?php if ($currentUser): ?>
         <span>Bonjour, <?= htmlspecialchars($currentUser['fullname'] ?: $currentUser['username'], ENT_QUOTES) ?></span>
@@ -67,33 +64,53 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
-      if (!empty($login)) {
+      // Admin : dashboard
+      if (!empty(\$adminDashboard)):
+        include __DIR__ . '/admin/dashboard.php';
+
+      // Admin : gestion produits
+      elseif (!empty(\$adminProducts)):
+        include __DIR__ . '/admin/products.php';
+      elseif (!empty(\$adminProductsCreate)):
+        include __DIR__ . '/admin/product_form.php';
+      elseif (!empty(\$adminProductsEdit)):
+        include __DIR__ . '/admin/product_form.php';
+
+      // Admin : gestion utilisateurs
+      elseif (!empty(\$adminUsers)):
+        include __DIR__ . '/admin/users.php';
+      elseif (!empty(\$adminUsersCreate)):
+        include __DIR__ . '/admin/user_form.php';
+      elseif (!empty(\$adminUsersEdit)):
+        include __DIR__ . '/admin/user_form.php';
+
+      // Cas publics habituels
+      elseif (!empty(\$login)):
         include __DIR__ . '/login.php';
-      } elseif (!empty($register)) {
+      elseif (!empty(\$register)):
         include __DIR__ . '/register.php';
-      } elseif (!empty($product)) {
+      elseif (!empty(\$product)):
         include __DIR__ . '/show.php';
-      } elseif (!empty($checkout)) {
+      elseif (!empty(\$checkout)):
         include __DIR__ . '/checkout.php';
-      } elseif (!empty($orderSuccess)) {
+      elseif (!empty(\$orderSuccess)):
         include __DIR__ . '/order_success.php';
-      } elseif (isset($items)) {
+      elseif (isset(\$items)):
         include __DIR__ . '/cart.php';
-      } elseif (!empty($sell)) {
+      elseif (!empty(\$sell)):
         include __DIR__ . '/sell.php';
-      } elseif (!empty($edit)) {
+      elseif (!empty(\$edit)):
         include __DIR__ . '/edit.php';
-      } elseif (!empty($account)) {
+      elseif (!empty(\$account)):
         include __DIR__ . '/account.php';
-      } else {
+      else:
         include __DIR__ . '/home.php';
-      }
+      endif;
     ?>
   </main>
 
   <footer class="bg-gray-800 text-white p-4 text-center">
-    &copy; <?= date('Y') ?> Pokémon Commerce. Tous droits réservés.
+    &copy; <?= date('Y') ?> Pokémon Commerce
   </footer>
-
 </body>
 </html>

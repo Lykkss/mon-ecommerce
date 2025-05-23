@@ -72,6 +72,7 @@ if (!empty($_SESSION['success'])): ?>
   </form>
 </div>
 
+<!-- Historique des commandes -->
 <div class="bg-white p-6 rounded shadow">
   <h2 class="text-2xl font-bold mb-4">Historique des commandes</h2>
   <?php if (empty($invoices)): ?>
@@ -88,7 +89,12 @@ if (!empty($_SESSION['success'])): ?>
       <tbody>
         <?php foreach ($invoices as $inv): ?>
           <tr class="border-t">
-            <td class="p-2"><?= htmlspecialchars($inv['id'], ENT_QUOTES) ?></td>
+            <td class="p-2">
+              <a href="/compte/facture/<?= $inv['id'] ?>"
+                 class="text-blue-600 hover:underline">
+                <?= htmlspecialchars($inv['id'], ENT_QUOTES) ?>
+              </a>
+            </td>
             <td class="p-2"><?= htmlspecialchars($inv['created_at'], ENT_QUOTES) ?></td>
             <td class="p-2 font-bold">
               <?= number_format($inv['total_amount'], 2, ',', ' ') ?> €
@@ -99,6 +105,11 @@ if (!empty($_SESSION['success'])): ?>
     </table>
   <?php endif; ?>
 </div>
+<td class="p-2">
+  <a href="/compte/facture/<?= $inv['id'] ?>" class="text-blue-600 hover:underline">
+    <?= htmlspecialchars($inv['id'], ENT_QUOTES) ?>
+  </a>
+</td>
 
 <!-- Preview instantanée -->
 <script>

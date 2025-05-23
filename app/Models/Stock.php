@@ -27,21 +27,15 @@ class Stock
         $stmt->execute([$quantity, $articleId]);
     }
 
-    /**
-     * Décrémente la quantité en stock (sans passer sous 0)
+      /**
+     * Décrémente la quantité en stock de $qty, sans passer en dessous de zéro.
      */
     public static function decrement(int $articleId, int $qty): void
     {
-        $db   = Database::getInstance();
-        $stmt = $db->prepare("
-            UPDATE stock
-            SET quantity = GREATEST(quantity - :q, 0)
-            WHERE article_id = :id
-        ");
-        $stmt->execute([
-            'q'  => $qty,
-            'id' => $articleId,
-        ]);
+        $row = self::findByArticle($articleId);
+        $current = $row['quantity'] ?? 0;
+        $newQty  = max(0, $current - $qty);
+        self::updateQuantity($articleId, $newQty);
     }
 
     /**

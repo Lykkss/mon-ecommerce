@@ -17,6 +17,7 @@ class Router
 
     private function add(string $method, string $pattern, string|array|callable $action): void
     {
+        // On transforme le pattern en regex
         $this->routes[] = [
             'method'  => $method,
             'pattern' => '#^' . $pattern . '$#',
@@ -26,42 +27,55 @@ class Router
 
     public function dispatch(string $uri, string $httpMethod): void
     {
+        session_start();
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
+        // ◆◆ Protection automatique des routes /admin… ◆◆
+        if (str_starts_with($path, '/admin')) {
+            if (empty($_SESSION['user_id'])
+                || ($_SESSION['user_role'] ?? '') !== 'admin'
+            ) {
+                http_response_code(403);
+                exit('403 – Accès refusé (Admin uniquement)');
+            }
+        }
+
         foreach ($this->routes as $route) {
-            if ($httpMethod === $route['method'] && preg_match($route['pattern'], $path, $matches)) {
-                // on ne garde que les clés nommées
+            if ($httpMethod === $route['method']
+             && preg_match($route['pattern'], $path, $matches)
+            ) {
+                // Extraire uniquement les paramètres nommés
                 $params = array_filter(
                     $matches,
-                    fn($key) => is_string($key),
+                    fn($k)=> is_string($k),
                     ARRAY_FILTER_USE_KEY
                 );
 
                 $action = $route['action'];
 
-                // 1) Action sous forme de [Classe, 'méthode']
+                // 1) [Classe, méthode]
                 if (is_array($action) && count($action) === 2) {
                     [$class, $method] = $action;
 
-                // 2) Action sous forme de "Controller@méthode"
-                } elseif (is_string($action) && strpos($action, '@') !== false) {
-                    [$controllerName, $method] = explode('@', $action, 2);
-                    $class = "App\\Controllers\\{$controllerName}";
+                // 2) "Controller@méthode"
+                } elseif (is_string($action) && str_contains($action, '@')) {
+                    [$ctrl, $method] = explode('@', $action, 2);
+                    $class = "App\\Controllers\\{$ctrl}";
 
-                // 3) Sinon, on considère que c'est un callable ou une closure
+                // 3) Callable
                 } else {
                     call_user_func_array($action, array_values($params));
                     return;
                 }
 
-                // Appel du contrôleur
+                // Instanciation + appel
                 (new $class)->{$method}(...array_values($params));
                 return;
             }
         }
 
-        // Aucune route ne correspond
+        // Pas de route matchée → 404
         http_response_code(404);
-        echo "Page non trouvée";
+        echo "404 – Page non trouvée";
     }
 }

@@ -81,6 +81,17 @@ class CheckoutController
             Stock::decrement($it['product']['id'], $it['quantity']);
         }
 
+        // 3) Envoi de la facture
+        foreach ($_SESSION['cart'] as $id => $qty) {
+            $stockData = Stock::findByArticle((int)$id);
+            if (!$stockData || $stockData['quantity'] < $qty) {
+                $_SESSION['errors'] = ["Stock insuffisant pour le produit #{$id}."];
+                header('Location: /commande');
+                exit;
+            }
+        }
+
+       
         // 3) Mail + vidage du panier
         (new MailController())->sendOrderConfirmation($email, [
             'items' => array_map(fn($i)=>[
