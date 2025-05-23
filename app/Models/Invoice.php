@@ -6,32 +6,53 @@ use PDO;
 
 class Invoice
 {
-    /** Retourne toutes les commandes d’un user */
+    /** Crée une facture et retourne son ID */
+    public static function create(int $userId, float $total, array $billing): int
+    {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            INSERT INTO invoices 
+              (user_id, total_amount, billing_address, billing_city, billing_zip)
+            VALUES 
+              (:u, :ta, :a, :c, :z)
+        ");
+        $stmt->execute([
+            'u'  => $userId,
+            'ta' => $total,
+            'a'  => $billing['address'],
+            'c'  => $billing['city'],
+            'z'  => $billing['zip'],
+        ]);
+        return (int)$db->lastInsertId();
+    }
+    /**
+     * Retourne toutes les commandes d’un user
+     */
     public static function findByUser(int $userId): array
     {
-        $stmt = Database::getInstance()
-            ->prepare("SELECT * FROM invoices WHERE user_id = ? ORDER BY created_at DESC");
+        $db = Database::getInstance();
+        $stmt = $db->prepare("
+            SELECT * FROM invoices
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+        ");
         $stmt->execute([$userId]);
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /** Retourne les détails d’une facture (items) */
+    /**
+     * Retourne les lignes d’une facture
+     */
     public static function findItems(int $invoiceId): array
     {
         $db = Database::getInstance();
-        // On suppose qu’on a lié items + articles dans la DB
         $stmt = $db->prepare("
-            SELECT a.id, a.title, a.price, ci.quantity
-            FROM cart_items ci
-            JOIN articles a ON a.id = ci.article_id
-            WHERE ci.user_id = (
-                SELECT user_id FROM invoices WHERE id = ?
-            )
-            AND ci.created_at <= (
-                SELECT created_at FROM invoices WHERE id = ?
-            )
+            SELECT ii.product_id, p.title, ii.quantity, ii.unit_price
+            FROM invoice_items ii
+            JOIN products p ON p.id = ii.product_id
+            WHERE ii.invoice_id = ?
         ");
-        $stmt->execute([$invoiceId, $invoiceId]);
-        return $stmt->fetchAll();
+        $stmt->execute([$invoiceId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

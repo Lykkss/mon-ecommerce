@@ -26,6 +26,17 @@
                     class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded-xl">
               Supprimer
             </button>
+            <boutton type="button"
+                    class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                    onclick="window.location.href='/produit/<?= $item['id'] ?>'">
+              Détails
+            </boutton>
+            <bouton type="button"
+                    class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                    onclick="window.location.href='/commande'">
+              Commander
+            </boutton>
+
           </form>
         </td>
       </tr>

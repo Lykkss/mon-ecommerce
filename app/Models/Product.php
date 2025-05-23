@@ -14,7 +14,7 @@ class Product
     public static function all(): array
     {
         $stmt = Database::getInstance()
-            ->query("SELECT * FROM products");
+            ->query("SELECT id, name, description, price, image FROM products");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -27,7 +27,7 @@ class Product
     public static function find(int $id): ?array
     {
         $stmt = Database::getInstance()
-            ->prepare("SELECT * FROM products WHERE id = ?");
+            ->prepare("SELECT id, name, description, price, image FROM products WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
@@ -36,27 +36,25 @@ class Product
      * Crée un nouveau produit en base
      *
      * @param array<string, mixed> $data [
-     *      'title'       => string,
-     *      'description' => string,
-     *      'price'       => float,
-     *      'image'       => string|null,
-     *      'author_id'   => int
+     *   'name'        => string,
+     *   'description' => string,
+     *   'price'       => float,
+     *   'image'       => string|null,
      * ]
      * @return int ID du produit créé
      */
     public static function create(array $data): int
     {
         $db = Database::getInstance();
-        $stmt = $db->prepare(
-            "INSERT INTO products (title, description, price, image, author_id) " .
-            "VALUES (:t, :d, :p, :i, :u)"
-        );
+        $stmt = $db->prepare("
+            INSERT INTO products (name, description, price, image)
+            VALUES (:n, :d, :p, :i)
+        ");
         $stmt->execute([
-            't' => $data['title'],
+            'n' => $data['name'],
             'd' => $data['description'],
             'p' => $data['price'],
             'i' => $data['image'],
-            'u' => $data['author_id'],
         ]);
         return (int)$db->lastInsertId();
     }
@@ -66,22 +64,26 @@ class Product
      *
      * @param int $id
      * @param array<string, mixed> $data [
-     *      'title'       => string,
-     *      'description' => string,
-     *      'price'       => float,
-     *      'image'       => string|null
+     *   'name'        => string,
+     *   'description' => string,
+     *   'price'       => float,
+     *   'image'       => string|null,
      * ]
      * @return void
      */
     public static function update(int $id, array $data): void
     {
         $db = Database::getInstance();
-        $stmt = $db->prepare(
-            "UPDATE products SET title = :t, description = :d, price = :p, image = :i " .
-            "WHERE id = :id"
-        );
+        $stmt = $db->prepare("
+            UPDATE products
+            SET name = :n,
+                description = :d,
+                price = :p,
+                image = :i
+            WHERE id = :id
+        ");
         $stmt->execute([
-            't'  => $data['title'],
+            'n'  => $data['name'],
             'd'  => $data['description'],
             'p'  => $data['price'],
             'i'  => $data['image'],
@@ -93,6 +95,7 @@ class Product
      * Supprime un produit
      *
      * @param int $id
+     * @return void
      */
     public static function delete(int $id): void
     {
