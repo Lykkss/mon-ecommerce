@@ -8,29 +8,28 @@ if (!empty($_SESSION['user_id'])) {
 }
 
 /**
- * Vérifie que l’avatar existe et renvoie un chemin commençant par '/'
+ * Vérifie que l’avatar existe et renvoie un chemin absolu commençant par '/'
  *
  * @param string $relativePath  'assets/avatars/nomfichier.ext'
  * @return string|null          '/assets/avatars/nomfichier.ext' ou null
  */
 function avatarUrl(string $relativePath): ?string {
-    $fullPath = __DIR__ . '/../../public/' . ltrim($relativePath, '/');
-    return file_exists($fullPath)
-        ? '/' . ltrim($relativePath, '/')
-        : null;
+    $path = ltrim($relativePath, '/');
+    $full  = __DIR__ . '/../../public/' . $path;
+    return file_exists($full) ? '/' . $path : null;
 }
 
-// 2) Détermine la source de l’avatar à afficher
+// 2) Détermination de l’URL de l’avatar
 $avatarSrc = null;
 if ($currentUser && !empty($currentUser['avatar'])) {
-    // Si l’utilisateur a uploadé un avatar valide
     $avatarSrc = avatarUrl($currentUser['avatar']);
 }
 
-// 3) Fallback vers default.png (facultatif : créer public/assets/avatars/default.png)
-// Si vous ne voulez PAS de placeholder, supprimez ce bloc
-if (!$avatarSrc && $currentUser) {
-    $avatarSrc = '/assets/avatars/default.png';
+// 3) Fallback optionnel vers default.png (facultatif)
+// Si vous avez un default.png dans public/assets/avatars/
+$fallback = '/assets/avatars/default.png';
+if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fallback)) {
+    $avatarSrc = $fallback;
 }
 ?>
 <!DOCTYPE html>
@@ -41,7 +40,7 @@ if (!$avatarSrc && $currentUser) {
   <title>PokéCommerce</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col">
 
   <header class="bg-blue-800 text-white p-4 flex justify-between items-center">
     <div class="flex items-center space-x-2">
@@ -57,9 +56,7 @@ if (!$avatarSrc && $currentUser) {
       <?php if ($currentUser): ?>
         <span>Bonjour, <?= htmlspecialchars($currentUser['fullname'] ?: $currentUser['username'], ENT_QUOTES) ?></span>
         <a href="/compte" class="hover:underline">Mon compte</a>
-        <a href="/panier" class="hover:underline">
-          Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)
-        </a>
+        <a href="/panier" class="hover:underline">Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)</a>
         <a href="/logout" class="hover:underline">Déconnexion</a>
       <?php else: ?>
         <a href="/login" class="hover:underline">Connexion</a>
@@ -68,7 +65,7 @@ if (!$avatarSrc && $currentUser) {
     </nav>
   </header>
 
-  <main class="container mx-auto p-4">
+  <main class="container mx-auto p-4 flex-grow">
     <?php
       if (!empty($login)) {
         include __DIR__ . '/login.php';
@@ -82,6 +79,10 @@ if (!$avatarSrc && $currentUser) {
         include __DIR__ . '/order_success.php';
       } elseif (isset($items)) {
         include __DIR__ . '/cart.php';
+      } elseif (!empty($sell)) {
+        include __DIR__ . '/sell.php';
+      } elseif (!empty($edit)) {
+        include __DIR__ . '/edit.php';
       } elseif (!empty($account)) {
         include __DIR__ . '/account.php';
       } else {
@@ -91,7 +92,8 @@ if (!$avatarSrc && $currentUser) {
   </main>
 
   <footer class="bg-gray-800 text-white p-4 text-center">
-    &copy; 2025 Pokémon Commerce
+    &copy; <?= date('Y') ?> Pokémon Commerce. Tous droits réservés.
   </footer>
+
 </body>
 </html>
