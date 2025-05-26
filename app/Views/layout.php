@@ -1,5 +1,4 @@
 <?php
-// app/Views/layout.php
 use App\Models\User;
 
 // Récupération de l’utilisateur courant
@@ -10,8 +9,6 @@ if (!empty($_SESSION['user_id'])) {
 
 /**
  * Vérifie que l’avatar existe et renvoie un chemin absolu commençant par '/'
- * @param string $relativePath
- * @return string|null
  */
 function avatarUrl(string $relativePath): ?string {
     $path = ltrim($relativePath, '/');
@@ -19,12 +16,11 @@ function avatarUrl(string $relativePath): ?string {
     return file_exists($full) ? '/' . $path : null;
 }
 
-// Détermination de l’URL de l’avatar
+// URL de l’avatar
 $avatarSrc = null;
 if ($currentUser && !empty($currentUser['avatar'])) {
     $avatarSrc = avatarUrl($currentUser['avatar']);
 }
-// Fallback avatar par défaut
 $fallback = '/assets/avatars/default.png';
 if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fallback)) {
     $avatarSrc = $fallback;
@@ -64,44 +60,40 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
-      // Admin : dashboard
-      if (!empty(\$adminDashboard)):
+      // === Admin ===
+      if (!empty($adminDashboard)):
         include __DIR__ . '/admin/dashboard.php';
 
-      // Admin : gestion produits
-      elseif (!empty(\$adminProducts)):
+      // Gestion produits
+      elseif (!empty($adminProducts)):
         include __DIR__ . '/admin/products.php';
-      elseif (!empty(\$adminProductsCreate)):
-        include __DIR__ . '/admin/product_form.php';
-      elseif (!empty(\$adminProductsEdit)):
+      elseif (!empty($adminProductsCreate) || !empty($adminProductsEdit)):
         include __DIR__ . '/admin/product_form.php';
 
-      // Admin : gestion utilisateurs
-      elseif (!empty(\$adminUsers)):
+      // Gestion utilisateurs
+      elseif (!empty($adminUsers)):
         include __DIR__ . '/admin/users.php';
-      elseif (!empty(\$adminUsersCreate)):
-        include __DIR__ . '/admin/user_form.php';
-      elseif (!empty(\$adminUsersEdit)):
+      elseif (!empty($adminUsersCreate) || !empty($adminUsersEdit)):
         include __DIR__ . '/admin/user_form.php';
 
-      // Cas publics habituels
-      elseif (!empty(\$login)):
+      // === Public ===
+      elseif (!empty($login)):
         include __DIR__ . '/login.php';
-      elseif (!empty(\$register)):
+      elseif (!empty($register)):
         include __DIR__ . '/register.php';
-      elseif (!empty(\$product)):
+      elseif (!empty($product)):
         include __DIR__ . '/show.php';
-      elseif (!empty(\$checkout)):
+      elseif (!empty($checkout)):
         include __DIR__ . '/checkout.php';
-      elseif (!empty(\$orderSuccess)):
+      elseif (!empty($orderSuccess)):
         include __DIR__ . '/order_success.php';
-      elseif (isset(\$items)):
+      elseif (isset($items)):
         include __DIR__ . '/cart.php';
-      elseif (!empty(\$sell)):
+      elseif (!empty($sell)):
         include __DIR__ . '/sell.php';
-      elseif (!empty(\$edit)):
+      elseif (!empty($edit)):
         include __DIR__ . '/edit.php';
-      elseif (!empty(\$account)):
+      elseif (!empty($account)):
         include __DIR__ . '/account.php';
       else:
         include __DIR__ . '/home.php';

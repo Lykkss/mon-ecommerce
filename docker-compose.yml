@@ -22,7 +22,7 @@ services:
       - db_data:/var/lib/mysql
       - ./data:/docker-entrypoint-initdb.d:ro
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin

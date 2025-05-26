@@ -1,5 +1,4 @@
-<?php
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -14,14 +13,15 @@ use App\Controllers\{
     InvoiceController,
     StockController
 };
-// Ajoutez aussi vos nouveaux controllers admin :
 use App\Controllers\Admin\{
     DashboardController,
     ProductController,
     UserController
 };
 
+// Démarrage unique de la session
 session_start();
+
 $router = new Router();
 
 // --- Authentification ---
@@ -44,27 +44,24 @@ $router->post('/panier/supprimer',[CartController::class, 'remove']);
 $router->get ('/commande',        [CheckoutController::class, 'form']);
 $router->post('/commande/valider', [CheckoutController::class, 'submit']);
 
-// --- Mon compte (protégé) et factures ---
+// --- Mon compte & factures (protégé) ---
 $router->get ('/compte',                  [AccountController::class, 'index']);
 $router->post('/compte/mettre-a-jour',    [AccountController::class, 'update']);
 $router->get ('/compte/factures',         [InvoiceController::class, 'index']);
-$router->get ('/compte/facture/(?P<id>\d+)',           [InvoiceController::class, 'show']);
-$router->get ('/compte/facture/(?P<id>\d+)/pdf',       [InvoiceController::class, 'pdf']);
+$router->get ('/compte/facture/(?P<id>\d+)',     [InvoiceController::class, 'show']);
+$router->get ('/compte/facture/(?P<id>\d+)/pdf', [InvoiceController::class, 'pdf']);
 
 // --- Gestion des articles (sell) ---
-$router->get ('/sell',               [SellController::class, 'createForm']);
-$router->post('/sell',               [SellController::class, 'createSubmit']);
-$router->get ('/edit/(?P<id>\d+)',   [SellController::class, 'editForm']);
-$router->post('/edit/(?P<id>\d+)',   [SellController::class, 'editSubmit']);
+$router->get ('/sell',             [SellController::class, 'createForm']);
+$router->post('/sell',             [SellController::class, 'createSubmit']);
+$router->get ('/edit/(?P<id>\d+)', [SellController::class, 'editForm']);
+$router->post('/edit/(?P<id>\d+)', [SellController::class, 'editSubmit']);
 $router->post('/delete/(?P<id>\d+)', [SellController::class, 'delete']);
 
-// --- Ajuster le stock (protégé) ---
-$router->post(
-    '/produit/(?P<id>\d+)/stock/ajouter',
-    [StockController::class, 'increase']
-);
+// --- Ajustement du stock (protégé) ---
+$router->post('/produit/(?P<id>\d+)/stock/ajouter', [StockController::class, 'increase']);
 
-// --- PANEL ADMIN (routes restreintes automatiquement) ---
+// --- PANEL ADMIN (protégé automatiquement) ---
 // Dashboard
 $router->get('/admin', [DashboardController::class, 'index']);
 
@@ -82,5 +79,5 @@ $router->get ('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editForm
 $router->post('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editSubmit']);
 $router->post('/admin/users/delete/(?P<id>\d+)', [UserController::class, 'delete']);
 
-// === Dispatch final ===
+// Dispatch final
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);

@@ -17,7 +17,7 @@ class Router
 
     private function add(string $method, string $pattern, string|array|callable $action): void
     {
-        // On transforme le pattern en regex
+        // On transforme le pattern en expression rationnelle
         $this->routes[] = [
             'method'  => $method,
             'pattern' => '#^' . $pattern . '$#',
@@ -27,10 +27,10 @@ class Router
 
     public function dispatch(string $uri, string $httpMethod): void
     {
-        session_start();
+        // On suppose que session_start() a déjà été appelé dans index.php
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
 
-        // ◆◆ Protection automatique des routes /admin… ◆◆
+        // ◆◆ Protection automatique des routes /admin ◆◆
         if (str_starts_with($path, '/admin')) {
             if (empty($_SESSION['user_id'])
                 || ($_SESSION['user_role'] ?? '') !== 'admin'
@@ -44,10 +44,10 @@ class Router
             if ($httpMethod === $route['method']
              && preg_match($route['pattern'], $path, $matches)
             ) {
-                // Extraire uniquement les paramètres nommés
+                // Conserver uniquement les paramètres nommés
                 $params = array_filter(
                     $matches,
-                    fn($k)=> is_string($k),
+                    fn($key) => is_string($key),
                     ARRAY_FILTER_USE_KEY
                 );
 
@@ -62,19 +62,19 @@ class Router
                     [$ctrl, $method] = explode('@', $action, 2);
                     $class = "App\\Controllers\\{$ctrl}";
 
-                // 3) Callable
+                // 3) Callable simple
                 } else {
                     call_user_func_array($action, array_values($params));
                     return;
                 }
 
-                // Instanciation + appel
+                // Instanciation + appel de la méthode
                 (new $class)->{$method}(...array_values($params));
                 return;
             }
         }
 
-        // Pas de route matchée → 404
+        // Aucune route ne correspond → 404
         http_response_code(404);
         echo "404 – Page non trouvée";
     }
