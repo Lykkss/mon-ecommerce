@@ -44,16 +44,19 @@ class AuthController
             exit;
         }
 
-        // Création de l’utilisateur
+        // Création de l’utilisateur avec rôle 'user' par défaut
         $userId = User::create([
             'username' => $username,
             'email'    => $email,
-            'password' => $password,
+            'password' => password_hash($password, PASSWORD_DEFAULT),
             'fullname' => $fullname,
+            'role'     => 'user',
         ]);
 
         // On logue l’utilisateur
-        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_id']   = $userId;
+        $_SESSION['user_role'] = 'user';
+
         header('Location: /');
         exit;
     }
@@ -76,8 +79,16 @@ class AuthController
             exit;
         }
 
-        $_SESSION['user_id'] = $user['id'];
-        header('Location: /');
+        // Stockage de l'ID et du rôle
+        $_SESSION['user_id']   = $user['id'];
+        $_SESSION['user_role'] = $user['role'];
+
+        // Redirection en fonction du rôle
+        if ($user['role'] === 'admin') {
+            header('Location: /admin');
+        } else {
+            header('Location: /');
+        }
         exit;
     }
 

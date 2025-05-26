@@ -7,31 +7,29 @@ use App\Models\Stock;
 
 class ProductController
 {
-    /**
-     * Affiche la liste des produits
-     */
     public function index(): void
     {
-        $products = Product::all();
-        $adminProducts = true;
+        $db = Database::getInstance();
+        // Récupère produits + stock
+        $products = $db->query(
+            'SELECT p.*, COALESCE(s.quantity,0) AS stock
+             FROM products p
+             LEFT JOIN stock s ON s.article_id = p.id'
+        )->fetchAll(\PDO::FETCH_ASSOC);
+
+        $adminProducts = $products;
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    /**
-     * Formulaire de création
-     */
     public function createForm(): void
     {
         $adminProductsCreate = true;
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    /**
-     * Traitement de la création
-     */
     public function createSubmit(): void
     {
-        // 1) Validation minimale
+        // Validation minimale
         $title = trim($_POST['title'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
@@ -42,7 +40,7 @@ class ProductController
         if ($price <= 0)       $errors[] = 'Le prix doit être positif.';
         if ($stock < 0)        $errors[] = 'Le stock doit être ≥ 0.';
 
-        // 2) Upload d’image
+        // Upload d’image
         $imagePath = null;
         if (!empty($_FILES['image']['tmp_name'])) {
             $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
@@ -63,7 +61,7 @@ class ProductController
             exit;
         }
 
-        // 3) Création du produit
+        // Création du produit
         $productId = Product::create([
             'title'       => $title,
             'description' => $desc,
@@ -72,18 +70,17 @@ class ProductController
             'author_id'   => $_SESSION['user_id'],
         ]);
 
-        // 4) Initialisation du stock
+        // Initialisation du stock
         $db = Database::getInstance();
-        $db->prepare("INSERT INTO stock (article_id, quantity) VALUES (?, ?)")
-           ->execute([$productId, $stock]);
+        $db->prepare(
+            'INSERT INTO stock (article_id, quantity) VALUES (?, ?)' 
+        )->execute([$productId, $stock]);
 
-        $_SESSION['success'] = "Produit créé avec succès.";
+        $_SESSION['success'] = 'Produit créé avec succès.';
         header('Location: /admin/products');
+        exit;
     }
 
-    /**
-     * Formulaire d’édition
-     */
     public function editForm(int $id): void
     {
         $product = Product::find($id);
@@ -99,9 +96,6 @@ class ProductController
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    /**
-     * Traitement de l’édition
-     */
     public function editSubmit(int $id): void
     {
         $product = Product::find($id);
@@ -143,33 +137,29 @@ class ProductController
             exit;
         }
 
-        // Mise à jour du produit
+        // Mise à jour
         Product::update($id, [
             'title'       => $title,
             'description' => $desc,
             'price'       => $price,
             'image'       => $imagePath,
         ]);
-
-        // Mise à jour du stock
         Stock::updateQuantity($id, $stock);
 
-        $_SESSION['success'] = "Produit mis à jour.";
+        $_SESSION['success'] = 'Produit mis à jour.';
         header('Location: /admin/products');
+        exit;
     }
 
-    /**
-     * Suppression d’un produit
-     */
     public function delete(int $id): void
     {
-        // Suppression des données associées
         $db = Database::getInstance();
-        $db->prepare("DELETE FROM stock WHERE article_id = ?")
+        $db->prepare('DELETE FROM stock WHERE article_id = ?')
            ->execute([$id]);
         Product::delete($id);
 
-        $_SESSION['success'] = "Produit supprimé.";
+        $_SESSION['success'] = 'Produit supprimé.';
         header('Location: /admin/products');
+        exit;
     }
 }

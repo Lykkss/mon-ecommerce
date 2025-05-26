@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers\Admin;
 
 use App\Core\Database;
@@ -17,24 +18,24 @@ class DashboardController
         $db = Database::getInstance();
 
         // 2) KPIs
-        $totalUsers = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $totalUsers    = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
         $totalProducts = (int) $db->query('SELECT COUNT(*) FROM products')->fetchColumn();
-        $totalSales = (float) $db->query('SELECT COALESCE(SUM(total_amount),0) FROM invoices')->fetchColumn();
+        $totalSales    = (float) $db->query('SELECT COALESCE(SUM(total_amount),0) FROM invoices')->fetchColumn();
 
         // 3) Dernières commandes
-        $stmt = $db->prepare('
-            SELECT id, user_id, total_amount, created_at
-            FROM invoices
-            ORDER BY created_at DESC
-            LIMIT 5
-        ');
+        $stmt = $db->prepare(
+            'SELECT id, user_id, total_amount, created_at
+             FROM invoices
+             ORDER BY created_at DESC
+             LIMIT 5'
+        );
         $stmt->execute();
         $recentOrders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         // 4) Flag pour la vue
         $adminDashboard = true;
 
-        // 5) Appel du layout (inclura Views/admin/dashboard.php)
+        // 5) Appel du layout
         require __DIR__ . '/../../Views/layout.php';
     }
 }

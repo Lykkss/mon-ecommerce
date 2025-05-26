@@ -2,58 +2,73 @@
 namespace App\Controllers;
 
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use Dompdf\Dompdf;
 
 class InvoiceController
 {
-    // Liste toutes les factures de l’utilisateur
+    // GET /compte/factures
     public function index(): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location:/login'); exit;
+            header('Location: /login');
+            exit;
         }
-        $invoices = Invoice::findByUser((int)$_SESSION['user_id']);
-        require __DIR__.'/../Views/layout.php';
+        // Récupère toutes les factures de l'utilisateur
+        $invoices = Invoice::findByUser((int) $_SESSION['user_id']);
+
+        // expose $invoices à la vue
+        extract(compact('invoices'));
+
+        // on inclut le layout — le layout détectera la présence de $invoices
+        require __DIR__ . '/../Views/layout.php';
     }
 
-    // Affiche le détail d’une facture
+    // GET /compte/facture/{id}
     public function show(int $id): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location:/login'); exit;
+            header('Location: /login');
+            exit;
         }
         $invoice = Invoice::findById($id);
         if (!$invoice || $invoice['user_id'] != $_SESSION['user_id']) {
-            header('Location:/compte'); exit;
+            header('Location: /compte');
+            exit;
         }
-        $items   = Invoice::findItems($id);
-        require __DIR__.'/../Views/layout.php';
+        // récupère les lignes de la facture
+        $items = Invoice::findItems($id);
+
+        // expose $invoice et $items à la vue
+        extract(compact('invoice','items'));
+
+        // le layout détectera la présence de $invoice + $items
+        require __DIR__ . '/../Views/layout.php';
     }
 
-    // Génère et renvoie le PDF de la facture
+    // GET /compte/facture/{id}/pdf
     public function pdf(int $id): void
     {
-        // Même contrôle d’accès que show()
         if (empty($_SESSION['user_id'])) {
-            header('Location:/login'); exit;
+            header('Location: /login');
+            exit;
         }
         $invoice = Invoice::findById($id);
         if (!$invoice || $invoice['user_id'] != $_SESSION['user_id']) {
-            header('Location:/compte'); exit;
+            header('Location: /compte');
+            exit;
         }
         $items = Invoice::findItems($id);
 
-        // Prépare le HTML (vue dédiée)
+        // Génère le HTML du PDF
         ob_start();
-        include __DIR__.'/../Views/invoice_pdf.php';
+        include __DIR__ . '/../Views/invoice_pdf.php';
         $html = ob_get_clean();
 
-        // Dompdf
         $dompdf = new Dompdf();
         $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4','portrait');
+        $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        $dompdf->stream("facture_{$id}.pdf", ["Attachment" => true]);
+        // Attachment false pour affichage inline
+        $dompdf->stream("facture_{$id}.pdf", ['Attachment' => false]);
     }
 }

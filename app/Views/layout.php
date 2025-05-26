@@ -60,43 +60,55 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
-      // === Admin ===
-      if (!empty($adminDashboard)):
-        include __DIR__ . '/admin/dashboard.php';
+      // 1) Panier
+      if (isset($items) && !isset($invoice)): 
+          include __DIR__ . '/cart.php';
 
-      // Gestion produits
+      // 2) Admin Dashboard
+      elseif (!empty($adminDashboard)): 
+          include __DIR__ . '/admin/dashboard.php';
+
+      // 3) Admin produits
       elseif (!empty($adminProducts)):
-        include __DIR__ . '/admin/products.php';
+          include __DIR__ . '/admin/products.php';
       elseif (!empty($adminProductsCreate) || !empty($adminProductsEdit)):
-        include __DIR__ . '/admin/product_form.php';
+          include __DIR__ . '/admin/product_form.php';
 
-      // Gestion utilisateurs
+      // 4) Admin users
       elseif (!empty($adminUsers)):
-        include __DIR__ . '/admin/users.php';
+          include __DIR__ . '/admin/users.php';
       elseif (!empty($adminUsersCreate) || !empty($adminUsersEdit)):
-        include __DIR__ . '/admin/user_form.php';
+          include __DIR__ . '/admin/user_form.php';
 
-      // === Public ===
+      // 5) Public views
       elseif (!empty($login)):
-        include __DIR__ . '/login.php';
+          include __DIR__ . '/login.php';
       elseif (!empty($register)):
-        include __DIR__ . '/register.php';
+          include __DIR__ . '/register.php';
       elseif (!empty($product)):
-        include __DIR__ . '/show.php';
+          include __DIR__ . '/show.php';
       elseif (!empty($checkout)):
-        include __DIR__ . '/checkout.php';
+          include __DIR__ . '/checkout.php';
       elseif (!empty($orderSuccess)):
-        include __DIR__ . '/order_success.php';
-      elseif (isset($items)):
-        include __DIR__ . '/cart.php';
+          include __DIR__ . '/order_success.php';
       elseif (!empty($sell)):
-        include __DIR__ . '/sell.php';
+          include __DIR__ . '/sell.php';
       elseif (!empty($edit)):
-        include __DIR__ . '/edit.php';
+          include __DIR__ . '/edit.php';
       elseif (!empty($account)):
-        include __DIR__ . '/account.php';
+          include __DIR__ . '/account.php';
+
+      // 6) Liste des factures
+      elseif (isset($invoices)):
+          include __DIR__ . '/invoice_list.php';
+
+      // 7) Détail d’une facture
+      elseif (isset($invoice) && isset($items)):
+          include __DIR__ . '/invoice_detail.php';
+
+      // 8) Page d’accueil
       else:
-        include __DIR__ . '/home.php';
+          include __DIR__ . '/home.php';
       endif;
     ?>
   </main>
