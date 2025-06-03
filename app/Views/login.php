@@ -1,4 +1,6 @@
+<!-- app/Views/login.php -->
 <h2 class="text-2xl font-bold mb-4">Connexion</h2>
+
 <?php if (!empty($_SESSION['errors'])): ?>
   <ul class="mb-4 text-red-600">
     <?php foreach($_SESSION['errors'] as $e): ?>
@@ -7,6 +9,7 @@
     unset($_SESSION['errors']); ?>
   </ul>
 <?php endif; ?>
+
 <form action="/login" method="post" class="space-y-4 bg-white p-6 rounded shadow">
   <label class="block">
     Email
@@ -20,6 +23,8 @@
     Se connecter
   </button>
 </form>
+
 <p class="mt-4">
-  Pas encore de compte ? <a href="/register" class="text-blue-600 hover:underline">Inscrivez-vous</a>.
+  Pas encore de compte ? 
+  <a href="/register" class="text-blue-600 hover:underline">Inscrivez-vous</a>.
 </p>

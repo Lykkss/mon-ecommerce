@@ -7,16 +7,13 @@ if (!empty($_SESSION['user_id'])) {
     $currentUser = User::findById((int) $_SESSION['user_id']);
 }
 
-/**
- * Vérifie que l’avatar existe et renvoie un chemin absolu commençant par '/'
- */
+// Fonction d’avatar
 function avatarUrl(string $relativePath): ?string {
     $path = ltrim($relativePath, '/');
     $full = __DIR__ . '/../../public/' . $path;
     return file_exists($full) ? '/' . $path : null;
 }
 
-// URL de l’avatar
 $avatarSrc = null;
 if ($currentUser && !empty($currentUser['avatar'])) {
     $avatarSrc = avatarUrl($currentUser['avatar']);
@@ -48,6 +45,9 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
     <nav class="space-x-4">
       <?php if ($currentUser): ?>
         <span>Bonjour, <?= htmlspecialchars($currentUser['fullname'] ?: $currentUser['username'], ENT_QUOTES) ?></span>
+        <?php if (($currentUser['role'] ?? '') === 'admin'): ?>
+          <a href="/admin" class="hover:underline font-semibold">Dashboard Admin</a>
+        <?php endif; ?>
         <a href="/compte" class="hover:underline">Mon compte</a>
         <a href="/panier" class="hover:underline">Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)</a>
         <a href="/logout" class="hover:underline">Déconnexion</a>
@@ -60,8 +60,13 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
+      // 5) Formulaire de connexion en pleine page
+      if (!empty($login)):
+          include __DIR__ . '/login.php';
+          return;  // on arrête ici
+
       // 1) Panier
-      if (isset($items) && !isset($invoice)): 
+      elseif (isset($items) && !isset($invoice)): 
           include __DIR__ . '/cart.php';
 
       // 2) Admin Dashboard
@@ -81,8 +86,6 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
           include __DIR__ . '/admin/user_form.php';
 
       // 5) Public views
-      elseif (!empty($login)):
-          include __DIR__ . '/login.php';
       elseif (!empty($register)):
           include __DIR__ . '/register.php';
       elseif (!empty($product)):
