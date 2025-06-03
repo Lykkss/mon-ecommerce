@@ -18,6 +18,18 @@ class AccountController
         $user     = User::findById($userId);
         $invoices = Invoice::findByUser($userId);
 
+        // === NOUVEAU : on récupère aussi les produits “à vendre” de ce user ===
+        $db = Database::getInstance();
+        $stmt = $db->prepare(
+            "SELECT p.id, p.name AS title, p.price, p.image, COALESCE(s.quantity,0) AS stock
+             FROM products p
+             LEFT JOIN stock s ON s.article_id = p.id
+             WHERE p.author_id = :uid
+             ORDER BY p.created_at DESC"
+        );
+        $stmt->execute(['uid' => $userId]);
+        $myProducts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
         // Si on vient de mettre à jour l’avatar, on peut avoir mis à jour $_SESSION['user_avatar'] + 'user_fullname'
         if (!empty($_SESSION['user_avatar'])) {
             $user['avatar']   = $_SESSION['user_avatar'];
@@ -54,7 +66,7 @@ class AccountController
             $errors[] = "Le nom complet ne peut pas dépasser 100 caractères.";
         }
 
-        // 2) Valeur actuelle
+        // 2) Valeur actuelle de l’avatar
         $avatarPath = $user['avatar'] ?? null;
 
         // 3) Traitement de l’upload
@@ -74,12 +86,12 @@ class AccountController
                     mkdir($dir, 0755, true);
                 }
 
-                // Supprime l’ancien
-                if ($user['avatar'] && file_exists(__DIR__ . '/../../public/' . $user['avatar'])) {
+                // Supprime l’ancien avatar
+                if (!empty($user['avatar']) && file_exists(__DIR__ . '/../../public/' . $user['avatar'])) {
                     @unlink(__DIR__ . '/../../public/' . $user['avatar']);
                 }
 
-                // Nom unique + cache buster
+                // Génère un nom de fichier unique + cache buster
                 $ext      = strtolower(pathinfo($avatar['name'], PATHINFO_EXTENSION));
                 $uniq     = uniqid('', true);
                 $filename = "avatar_{$userId}_{$uniq}.{$ext}";
@@ -96,13 +108,13 @@ class AccountController
             }
         }
 
-        if ($errors) {
+        if (!empty($errors)) {
             $_SESSION['errors'] = $errors;
             header('Location: /compte');
             exit;
         }
 
-        // 4) Update en base
+        // 4) Mise à jour en base
         $db   = Database::getInstance();
         $stmt = $db->prepare("
             UPDATE users

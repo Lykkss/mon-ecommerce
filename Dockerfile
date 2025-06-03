@@ -19,7 +19,7 @@ RUN apt-get update \
 
 # 4) Installation de Composer & dépendances
 WORKDIR /var/www/html
-COPY composer.json composer.lock ./
+COPY composer.json ./ 
 RUN curl -sS https://getcomposer.org/installer | php -- \
       --install-dir=/usr/local/bin --filename=composer \
  && composer install --no-dev --optimize-autoloader

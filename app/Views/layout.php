@@ -85,31 +85,40 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
       elseif (!empty($adminUsersCreate) || !empty($adminUsersEdit)):
           include __DIR__ . '/admin/user_form.php';
 
-      // 5) Public views
+      // 5) Admin Stock
+      elseif (!empty($adminStock)):
+          include __DIR__ . '/admin/stock.php';
+
+      // 6) Public views: Inscription
       elseif (!empty($register)):
           include __DIR__ . '/register.php';
+      // 7) Public: Détail produit
       elseif (!empty($product)):
           include __DIR__ . '/show.php';
+      // 8) Public: Checkout
       elseif (!empty($checkout)):
           include __DIR__ . '/checkout.php';
+      // 9) Public: Page Merci
       elseif (!empty($orderSuccess)):
           include __DIR__ . '/order_success.php';
+      // 10) Public: Sell / Édition
       elseif (!empty($sell)):
           include __DIR__ . '/sell.php';
       elseif (!empty($edit)):
           include __DIR__ . '/edit.php';
+      // 11) Espace Mon compte
       elseif (!empty($account)):
           include __DIR__ . '/account.php';
 
-      // 6) Liste des factures
+      // 12) Liste des factures
       elseif (isset($invoices)):
           include __DIR__ . '/invoice_list.php';
 
-      // 7) Détail d’une facture
+      // 13) Détail d’une facture
       elseif (isset($invoice) && isset($items)):
           include __DIR__ . '/invoice_detail.php';
 
-      // 8) Page d’accueil
+      // 14) Page d’accueil par défaut
       else:
           include __DIR__ . '/home.php';
       endif;

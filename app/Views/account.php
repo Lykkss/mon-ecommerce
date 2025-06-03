@@ -16,6 +16,7 @@ if (!empty($_SESSION['success'])): ?>
   </p>
 <?php unset($_SESSION['success']); endif; ?>
 
+<!-- ==================== MON PROFIL ==================== -->
 <div class="bg-white p-6 rounded shadow mb-6">
   <h2 class="text-2xl font-bold mb-4">Mon profil</h2>
   <form id="profile-form"
@@ -72,8 +73,8 @@ if (!empty($_SESSION['success'])): ?>
   </form>
 </div>
 
-<!-- Historique des commandes -->
-<div class="bg-white p-6 rounded shadow">
+<!-- ==================== HISTORIQUE DES COMMANDES ==================== -->
+<div class="bg-white p-6 rounded shadow mb-6">
   <h2 class="text-2xl font-bold mb-4">Historique des commandes</h2>
   <?php if (empty($invoices)): ?>
     <p>Vous n’avez encore passé aucune commande.</p>
@@ -106,7 +107,78 @@ if (!empty($_SESSION['success'])): ?>
   <?php endif; ?>
 </div>
 
-<!-- Preview instantanée -->
+<!-- ==================== MES PRODUITS À VENDRE ==================== -->
+<div class="bg-white p-6 rounded shadow mb-6">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-2xl font-bold">Mes produits à vendre</h2>
+    <a href="/sell"
+       class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
+      Publier un nouveau produit
+    </a>
+  </div>
+
+  <?php if (empty($myProducts)): ?>
+    <p>Vous n’avez encore publié aucun produit à la vente.</p>
+  <?php else: ?>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <?php foreach ($myProducts as $prod): ?>
+        <div class="bg-gray-50 p-4 rounded shadow">
+          <?php if (!empty($prod['image'])): ?>
+            <img
+              src="/<?= htmlspecialchars($prod['image'], ENT_QUOTES) ?>"
+              alt="<?= htmlspecialchars($prod['title'], ENT_QUOTES) ?>"
+              class="w-full h-32 object-cover rounded mb-2"
+            >
+          <?php else: ?>
+            <div
+              class="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center text-gray-500 text-sm"
+            >
+              Aucune image
+            </div>
+          <?php endif; ?>
+
+          <h3 class="font-semibold text-lg">
+            <?= htmlspecialchars($prod['title'], ENT_QUOTES) ?>
+          </h3>
+          <p class="text-sm text-gray-600 mb-1">
+            <?= number_format($prod['price'], 2, ',', ' ') ?> €
+          </p>
+          <p class="text-sm mb-2">
+            Stock :
+            <?php if ($prod['stock'] > 0): ?>
+              <span class="text-green-600 font-medium">
+                <?= $prod['stock'] ?>
+              </span>
+            <?php else: ?>
+              <span class="text-red-600 font-bold">
+                Rupture
+              </span>
+            <?php endif; ?>
+          </p>
+
+          <div class="flex space-x-2">
+            <a href="/edit/<?= $prod['id'] ?>"
+               class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+              Éditer
+            </a>
+            <form action="/delete/<?= $prod['id'] ?>"
+                  method="post"
+                  onsubmit="return confirm('Voulez-vous vraiment supprimer ce produit ?');">
+              <button
+                type="submit"
+                class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+              >
+                Supprimer
+              </button>
+            </form>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</div>
+
+<!-- ==================== BUST-CACHE AVATAR (JS) ==================== -->
 <script>
   const input   = document.getElementById('avatar-input');
   const preview = document.getElementById('avatar-preview');

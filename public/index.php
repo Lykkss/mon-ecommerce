@@ -72,6 +72,8 @@ $router->get('/admin',                  [DashboardController::class, 'index']);
 // Consultation du stock en back-office
 $router->get('/admin/stock',            [AdminStockController::class, 'index']);
 $router->post('/admin/stock/update', [AdminStockController::class, 'updateSubmit']);
+$router->post('/admin/stock/update', [AdminStockController::class, 'updateSubmit']);
+
 
 // CRUD produits
 $router->get ('/admin/products',               [ProductController::class, 'index']);
