@@ -1,42 +1,91 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pokemon commerce</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 text-gray-800">
-  <!-- votre markup ici -->
-  <?php
-require_once __DIR__ . '/../vendor/autoload.php';
-use App\Core\Router;
+<?php
+declare(strict_types=1);
 
-// Démarrage de la session
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use App\Core\Router;
+use App\Controllers\{
+    HomeController,
+    CartController,
+    CheckoutController,
+    AuthController,
+    AccountController,
+    SellController,
+    InvoiceController,
+    StockController as PublicStockController
+};
+use App\Controllers\Admin\{
+    DashboardController,
+    ProductController,
+    UserController,
+    StockController as AdminStockController
+};
+
 session_start();
 
-// Instanciation du routeur
 $router = new Router();
 
-// Définition des routes
-$router->get('/', 'HomeController@index');
-$router->get('/produit/(?P<id>\d+)', 'HomeController@show');
-// … autres routes (panier, compte, etc.)
+// --- Authentification ---
+$router->get ('/register',        [AuthController::class, 'registerForm']);
+$router->post('/register',        [AuthController::class, 'registerSubmit']);
+$router->get ('/login',           [AuthController::class, 'loginForm']);
+$router->post('/login',           [AuthController::class, 'loginSubmit']);
+$router->get ('/logout',          [AuthController::class, 'logout']);
 
-// Lancement
-$router->post('/panier/ajouter', 'CartController@add');
+// --- Catalogue public ---
+$router->get ('/',                        [HomeController::class, 'index']);
+$router->get ('/produit/(?P<id>\d+)',     [HomeController::class, 'show']);
+
+// --- Panier (protégé) ---
+$router->post('/panier/ajouter',          [CartController::class, 'add']);
+$router->get ('/panier',                  [CartController::class, 'index']);
+$router->post('/panier/supprimer',        [CartController::class, 'remove']);
+
+// --- Checkout / commande (protégé) ---
+$router->get ('/commande',                [CheckoutController::class, 'form']);
+$router->post('/commande/valider',        [CheckoutController::class, 'submit']);
+
+// --- Mon compte & factures (protégé) ---
+$router->get ('/compte',                           [AccountController::class, 'index']);
+$router->post('/compte/mettre-a-jour',             [AccountController::class, 'update']);
+$router->get ('/compte/factures',                  [InvoiceController::class, 'index']);
+$router->get ('/compte/facture/(?P<id>\d+)',       [InvoiceController::class, 'show']);
+$router->get ('/compte/facture/(?P<id>\d+)/pdf',   [InvoiceController::class, 'pdf']);
+
+// --- Gestion des articles (sell) ---
+$router->get ('/sell',                  [SellController::class, 'createForm']);
+$router->post('/sell',                  [SellController::class, 'createSubmit']);
+$router->get ('/edit/(?P<id>\d+)',      [SellController::class, 'editForm']);
+$router->post('/edit/(?P<id>\d+)',      [SellController::class, 'editSubmit']);
+$router->post('/delete/(?P<id>\d+)',    [SellController::class, 'delete']);
+
+// --- Ajustement du stock (public, protégé) ---
+$router->post(
+    '/produit/(?P<id>\d+)/stock/ajouter',
+    [PublicStockController::class, 'increase']
+);
+
+// --- PANEL ADMIN (protégé automatiquement par Router) ---
+// Dashboard
+$router->get('/admin',                  [DashboardController::class, 'index']);
+
+// Consultation du stock en back-office
+$router->get('/admin/stock',            [AdminStockController::class, 'index']);
+$router->post('/admin/stock/update', [AdminStockController::class, 'updateSubmit']);
+
+// CRUD produits
+$router->get ('/admin/products',               [ProductController::class, 'index']);
+$router->get ('/admin/products/create',        [ProductController::class, 'createForm']);
+$router->post('/admin/products/create',        [ProductController::class, 'createSubmit']);
+$router->get ('/admin/products/edit/(?P<id>\d+)', [ProductController::class, 'editForm']);
+$router->post('/admin/products/edit/(?P<id>\d+)', [ProductController::class, 'editSubmit']);
+$router->post('/admin/products/delete/(?P<id>\d+)', [ProductController::class, 'delete']);
+
+// CRUD utilisateurs
+$router->get ('/admin/users',               [UserController::class, 'index']);
+$router->get ('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editForm']);
+$router->post('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editSubmit']);
+$router->post('/admin/users/delete/(?P<id>\d+)', [UserController::class, 'delete']);
+
+// --- Dispatch final (affiche la page ou 404/403) ---
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);
-?>
-  <header class="bg-blue-600 text-white p-4">
-    <h1 class="text-2xl">Pokémon Commerce</h1>
-  </header>
-  <main class="container mx-auto p-4">
-    <h2 class="text-xl mb-4">Bienvenue sur notre site de vente de Pokémon !</h2>
-    <p>Parcourez nos produits et passez commande en toute sécurité.</p>
-    <!-- Ajoutez ici le contenu dynamique généré par le routeur -->
-  </main>
-  <footer class="bg-gray-800 text-white p-4 text-center">
-    <p>&copy; 2025 Pokémon Commerce. Tous droits réservés.</p>
-  </footer>
-</body>
-</html>

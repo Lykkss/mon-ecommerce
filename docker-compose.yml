@@ -7,6 +7,11 @@ services:
       - "8000:80"
     depends_on:
       - db
+    environment:
+      SMTP_HOST: mailhog
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASS: ""
 
   db:
     image: mysql:8.0
@@ -15,9 +20,9 @@ services:
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - db_data:/var/lib/mysql
-    # Si vous avez encore MySQL local sur 3306, passez à 3307:3306
+      - ./data:/docker-entrypoint-initdb.d:ro
     ports:
-      - "3306:3306"
+      - "3307:3306"
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -39,6 +44,12 @@ services:
       SWAGGER_JSON: /swagger/swagger.yaml
     volumes:
       - ./public/swagger/swagger.yaml:/swagger/swagger.yaml:ro
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
 
   db_sonar:
     image: postgres:13
