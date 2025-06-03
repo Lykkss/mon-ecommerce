@@ -8,7 +8,7 @@
 
 <form action="<?= !empty($adminUsersEdit)
                  ? '/admin/users/edit/'.$userToEdit['id']
-                 : '/admin/users/edit/0' ?>"
+                 : '/admin/users/create' ?>"
       method="post"
       class="bg-white p-6 rounded shadow space-y-4">
 
@@ -35,11 +35,11 @@
     <select name="role"
             class="w-full border rounded p-2">
       <option value="user"
-        <?= (isset($userToEdit['role']) && $userToEdit['role']==='user') ? 'selected' : '' ?>>
+        <?= (isset($userToEdit['role']) && $userToEdit['role'] === 'user') ? 'selected' : '' ?>>
         User
       </option>
       <option value="admin"
-        <?= (isset($userToEdit['role']) && $userToEdit['role']==='admin') ? 'selected' : '' ?>>
+        <?= (isset($userToEdit['role']) && $userToEdit['role'] === 'admin') ? 'selected' : '' ?>>
         Admin
       </option>
     </select>

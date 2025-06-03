@@ -1,25 +1,49 @@
 openapi: 3.0.3
 info:
-  title: Pokémon Commerce API
+  title: E-commerce PHP API
   version: "1.0.0"
+  description: Spécification OpenAPI pour toutes les routes définies dans le routeur PHP.
 servers:
   - url: http://localhost:8000
-paths:
-  /api/articles:
-    get:
-      summary: Liste des articles
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Article'
+    description: Serveur local
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
-    Article:
+    RegisterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+        fullname:
+          type: string
+      required:
+        - email
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+      required:
+        - email
+        - password
+
+    ProductSummary:
       type: object
       properties:
         id:
@@ -28,3 +52,760 @@ components:
           type: string
         price:
           type: number
+          format: float
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            stock:
+              type: integer
+
+    CartItem:
+      type: object
+      properties:
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+      required:
+        - product_id
+        - quantity
+
+    RemoveCartItemRequest:
+      type: object
+      properties:
+        product_id:
+          type: integer
+      required:
+        - product_id
+
+    CheckoutRequest:
+      type: object
+      properties:
+        address:
+          type: string
+        payment_method:
+          type: string
+          enum:
+            - credit_card
+            - paypal
+            - bank_transfer
+      required:
+        - address
+        - payment_method
+
+    AccountUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        fullname:
+          type: string
+
+    InvoiceSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+          format: float
+        date:
+          type: string
+          format: date-time
+
+    InvoiceDetail:
+      allOf:
+        - $ref: '#/components/schemas/InvoiceSummary'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CartItem'
+            status:
+              type: string
+              enum:
+                - pending
+                - paid
+                - canceled
+
+    SellItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        stock:
+          type: integer
+        description:
+          type: string
+      required:
+        - name
+        - price
+        - stock
+
+    StockAdjustRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+      required:
+        - quantity
+
+    ProductCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+        stock:
+          type: integer
+      required:
+        - name
+        - price
+        - stock
+
+    UserEditRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        fullname:
+          type: string
+
+paths:
+  # --- Authentification ---
+  /register:
+    get:
+      tags:
+        - Auth
+      summary: Affiche le formulaire d'inscription
+      responses:
+        '200':
+          description: Formulaire d'inscription (HTML)
+    post:
+      tags:
+        - Auth
+      summary: Soumet les données d'inscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Utilisateur créé
+        '400':
+          description: Données invalides
+
+  /login:
+    get:
+      tags:
+        - Auth
+      summary: Affiche le formulaire de connexion
+      responses:
+        '200':
+          description: Formulaire de connexion (HTML)
+    post:
+      tags:
+        - Auth
+      summary: Soumet les données de connexion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Connexion réussie (renvoie token ou session)
+        '401':
+          description: Identifiants invalides
+
+  /logout:
+    get:
+      tags:
+        - Auth
+      summary: Déconnecte l'utilisateur
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Déconnecté avec succès
+
+  # --- Catalogue public ---
+  /:
+    get:
+      tags:
+        - Catalogue
+      summary: Liste des produits (page d'accueil)
+      responses:
+        '200':
+          description: Page HTML listant les produits
+
+  /produit/{id}:
+    get:
+      tags:
+        - Catalogue
+      summary: Détail d'un produit
+      parameters:
+        - name: id
+          in: path
+          description: ID du produit
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Détails du produit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          description: Produit non trouvé
+
+  # --- Panier (protégé) ---
+  /panier/ajouter:
+    post:
+      tags:
+        - Panier
+      summary: Ajoute un article au panier
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItem'
+      responses:
+        '200':
+          description: Article ajouté au panier
+        '400':
+          description: Requête invalide
+
+  /panier:
+    get:
+      tags:
+        - Panier
+      summary: Affiche le contenu du panier
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Contenu du panier
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartItem'
+
+  /panier/supprimer:
+    post:
+      tags:
+        - Panier
+      summary: Supprime un article du panier
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemoveCartItemRequest'
+      responses:
+        '200':
+          description: Article supprimé
+        '400':
+          description: Requête invalide
+
+  # --- Checkout / Commande (protégé) ---
+  /commande:
+    get:
+      tags:
+        - Commande
+      summary: Affiche le formulaire de commande
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Page HTML de checkout
+
+  /commande/valider:
+    post:
+      tags:
+        - Commande
+      summary: Valide la commande et crée l’enregistrement
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: Commande créée
+        '400':
+          description: Données de commande invalides
+
+  # --- Mon compte & factures (protégé) ---
+  /compte:
+    get:
+      tags:
+        - Compte
+      summary: Affiche les informations du compte
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Détails du compte (HTML ou JSON)
+    post:
+      tags:
+        - Compte
+      summary: Met à jour les informations du compte
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountUpdateRequest'
+      responses:
+        '200':
+          description: Compte mis à jour
+        '400':
+          description: Données invalides
+
+  /compte/factures:
+    get:
+      tags:
+        - Compte
+      summary: Liste des factures de l’utilisateur
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des factures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceSummary'
+
+  /compte/facture/{id}:
+    get:
+      tags:
+        - Compte
+      summary: Détail d’une facture
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de la facture
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Détail de la facture
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceDetail'
+        '404':
+          description: Facture non trouvée
+
+  /compte/facture/{id}/pdf:
+    get:
+      tags:
+        - Compte
+      summary: Télécharge la facture au format PDF
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de la facture
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: PDF de la facture
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Facture non trouvée
+
+  # --- Gestion des articles (sell) ---
+  /sell:
+    get:
+      tags:
+        - Sell
+      summary: Affiche le formulaire pour proposer un nouvel article
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Formulaire de création d’article (HTML)
+    post:
+      tags:
+        - Sell
+      summary: Crée un nouvel article à vendre
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellItemRequest'
+      responses:
+        '201':
+          description: Article créé
+        '400':
+          description: Données invalides
+
+  /edit/{id}:
+    get:
+      tags:
+        - Sell
+      summary: Affiche le formulaire d’édition d’un article existant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’article à modifier
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Formulaire d’édition (HTML)
+        '404':
+          description: Article non trouvé
+    post:
+      tags:
+        - Sell
+      summary: Soumet la modification d’un article
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’article à modifier
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellItemRequest'
+      responses:
+        '200':
+          description: Article mis à jour
+        '400':
+          description: Données invalides
+        '404':
+          description: Article non trouvé
+
+  /delete/{id}:
+    post:
+      tags:
+        - Sell
+      summary: Supprime un article mis en vente
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’article à supprimer
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Article supprimé
+        '404':
+          description: Article non trouvé
+
+  # --- Ajustement du stock (public, protégé) ---
+  /produit/{id}/stock/ajouter:
+    post:
+      tags:
+        - Stock Public
+      summary: Augmente le stock d’un produit
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID du produit
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustRequest'
+      responses:
+        '200':
+          description: Stock mis à jour
+        '400':
+          description: Requête invalide
+        '404':
+          description: Produit non trouvé
+
+  # --- PANEL ADMIN (protégé) ---
+  /admin:
+    get:
+      tags:
+        - Admin
+      summary: Affiche le tableau de bord administrateur
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Page d’administration (HTML)
+
+  /admin/stock:
+    get:
+      tags:
+        - Admin Stock
+      summary: Affiche le stock en back-office
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste du stock (HTML ou JSON)
+
+  /admin/stock/update:
+    post:
+      tags:
+        - Admin Stock
+      summary: Met à jour le stock en back-office
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustRequest'
+      responses:
+        '200':
+          description: Stock mis à jour
+        '400':
+          description: Données invalides
+
+  # --- CRUD Produits (Admin) ---
+  /admin/products:
+    get:
+      tags:
+        - Admin Produits
+      summary: Liste des produits en back-office
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des produits (HTML ou JSON)
+
+  /admin/products/create:
+    get:
+      tags:
+        - Admin Produits
+      summary: Affiche le formulaire de création d’un produit
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Formulaire de création (HTML)
+    post:
+      tags:
+        - Admin Produits
+      summary: Crée un nouveau produit
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '201':
+          description: Produit créé
+        '400':
+          description: Données invalides
+
+  /admin/products/edit/{id}:
+    get:
+      tags:
+        - Admin Produits
+      summary: Affiche le formulaire d’édition d’un produit
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID du produit
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Formulaire d’édition (HTML)
+        '404':
+          description: Produit non trouvé
+    post:
+      tags:
+        - Admin Produits
+      summary: Met à jour un produit existant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID du produit à mettre à jour
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '200':
+          description: Produit mis à jour
+        '400':
+          description: Données invalides
+        '404':
+          description: Produit non trouvé
+
+  /admin/products/delete/{id}:
+    post:
+      tags:
+        - Admin Produits
+      summary: Supprime un produit
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID du produit à supprimer
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Produit supprimé
+        '404':
+          description: Produit non trouvé
+
+  /admin/users:
+    get:
+      tags:
+        - Admin Utilisateurs
+      summary: Liste des utilisateurs en back-office
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Affiche la liste des utilisateurs (HTML ou JSON)
+
+  /admin/users/edit/{id}:
+    get:
+      tags:
+        - Admin Utilisateurs
+      summary: Affiche le formulaire d’édition d’un utilisateur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’utilisateur à modifier
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Formulaire d’édition (HTML)
+        '404':
+          description: Utilisateur non trouvé
+    post:
+      tags:
+        - Admin Utilisateurs
+      summary: Met à jour un utilisateur existant
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’utilisateur à mettre à jour
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserEditRequest'
+      responses:
+        '200':
+          description: Utilisateur mis à jour
+        '400':
+          description: Données invalides
+        '404':
+          description: Utilisateur non trouvé
+
+  /admin/users/delete/{id}:
+    post:
+      tags:
+        - Admin Utilisateurs
+      summary: Supprime un utilisateur
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: ID de l’utilisateur à supprimer
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Utilisateur supprimé
+        '404':
+          description: Utilisateur non trouvé

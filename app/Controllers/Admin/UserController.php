@@ -1,27 +1,26 @@
 <?php
 namespace App\Controllers\Admin;
 
-use App\Core\Database;
 use App\Models\User;
 
 class UserController
 {
-    // Liste tous les utilisateurs
+    // 1) Liste tous les utilisateurs
     public function index(): void
     {
-        $users = User::findAll();
+        $users      = User::all();
         $adminUsers = $users;
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    // Formulaire de création
+    // 2) Formulaire de création
     public function createForm(): void
     {
         $adminUsersCreate = true;
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    // Création d'un utilisateur
+    // 3) Traitement de la création
     public function createSubmit(): void
     {
         $username = trim($_POST['username'] ?? '');
@@ -30,10 +29,18 @@ class UserController
         $password = $_POST['password'] ?? '';
 
         $errors = [];
-        if ($username === '')     $errors[] = 'Le nom d\'utilisateur est requis.';
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
-        if (!in_array($role, ['user','admin'], true))   $errors[] = 'Rôle invalide.';
-        if (strlen($password) < 6)                      $errors[] = 'Le mot de passe doit faire au moins 6 caractères.';
+        if ($username === '') {
+            $errors[] = "Le nom d'utilisateur est requis.";
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Email invalide.";
+        }
+        if (!in_array($role, ['user','admin'], true)) {
+            $errors[] = "Rôle invalide.";
+        }
+        if (strlen($password) < 6) {
+            $errors[] = "Le mot de passe doit faire au moins 6 caractères.";
+        }
 
         if ($errors) {
             $_SESSION['errors'] = $errors;
@@ -41,12 +48,16 @@ class UserController
             exit;
         }
 
+        // On hache une UNIQUE fois avant de créer
         $hash = password_hash($password, PASSWORD_DEFAULT);
+
         User::create([
             'username' => $username,
             'email'    => $email,
             'role'     => $role,
-            'password' => $hash,
+            'password' => $hash,       // Mot de passe déjà haché
+            'fullname' => $_POST['fullname'] ?? null,
+            // 'avatar' peut être géré séparément si besoin
         ]);
 
         $_SESSION['success'] = 'Utilisateur créé.';
@@ -54,11 +65,11 @@ class UserController
         exit;
     }
 
-    // Formulaire d'édition
+    // 4) Formulaire d'édition
     public function editForm(int $id): void
     {
-        $user = User::findById($id);
-        if (!$user) {
+        $userToEdit = User::findById($id);
+        if (!$userToEdit) {
             $_SESSION['errors'] = ["Utilisateur #{$id} introuvable."];
             header('Location: /admin/users');
             exit;
@@ -67,7 +78,7 @@ class UserController
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    // Traitement de l'édition
+    // 5) Traitement de l'édition
     public function editSubmit(int $id): void
     {
         $user = User::findById($id);
@@ -83,10 +94,18 @@ class UserController
         $password = $_POST['password'] ?? '';
 
         $errors = [];
-        if ($username === '')     $errors[] = 'Le nom d\'utilisateur est requis.';
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
-        if (!in_array($role, ['user','admin'], true))   $errors[] = 'Rôle invalide.';
-        if ($password !== '' && strlen($password) < 6)   $errors[] = 'Le mot de passe doit faire au moins 6 caractères.';
+        if ($username === '') {
+            $errors[] = "Le nom d'utilisateur est requis.";
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = "Email invalide.";
+        }
+        if (!in_array($role, ['user','admin'], true)) {
+            $errors[] = "Rôle invalide.";
+        }
+        if ($password !== '' && strlen($password) < 6) {
+            $errors[] = "Le mot de passe doit faire au moins 6 caractères.";
+        }
 
         if ($errors) {
             $_SESSION['errors'] = $errors;
@@ -100,7 +119,11 @@ class UserController
             'role'     => $role,
         ];
         if ($password !== '') {
-            $data['password'] = password_hash($password, PASSWORD_DEFAULT);
+            // On transmet le mot de passe en clair, le modèle l’hachera
+            $data['password'] = $password;
+        }
+        if (array_key_exists('fullname', $_POST)) {
+            $data['fullname'] = trim($_POST['fullname']);
         }
 
         User::update($id, $data);
@@ -109,7 +132,7 @@ class UserController
         exit;
     }
 
-    // Suppression
+    // 6) Suppression
     public function delete(int $id): void
     {
         User::delete($id);

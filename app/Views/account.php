@@ -90,7 +90,7 @@ if (!empty($_SESSION['success'])): ?>
         <?php foreach ($invoices as $inv): ?>
           <tr class="border-t">
             <td class="p-2">
-              <a href="/compte/facture/<?= $inv['id'] ?>"
+              <a href="/compte/facture/<?= htmlspecialchars($inv['id'], ENT_QUOTES) ?>"
                  class="text-blue-600 hover:underline">
                 <?= htmlspecialchars($inv['id'], ENT_QUOTES) ?>
               </a>
@@ -105,11 +105,6 @@ if (!empty($_SESSION['success'])): ?>
     </table>
   <?php endif; ?>
 </div>
-<td class="p-2">
-  <a href="/compte/facture/<?= $inv['id'] ?>" class="text-blue-600 hover:underline">
-    <?= htmlspecialchars($inv['id'], ENT_QUOTES) ?>
-  </a>
-</td>
 
 <!-- Preview instantanée -->
 <script>

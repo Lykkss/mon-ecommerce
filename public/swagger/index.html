@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Documentation Pokémon Commerce API</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.css" integrity="sha512-OE62vnV8e+RzoIpu3oALiLByDr3piuUoOFAkA+r3rXUI7uPjGJAhqLkCvpaGbaJJ1n7RRxvuTV9PfWLIQMHh9g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    html {
+      box-sizing: border-box;
+      overflow: -moz-scrollbars-vertical;
+      overflow-y: scroll;
+    }
+    *,
+    *:before,
+    *:after {
+      box-sizing: inherit;
+    }
+    body {
+      margin: 0;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js" integrity="sha512-KzFxdvcoNK/Zk1y58fzIEuAZ7GvKruJOMqT8oXon7Z2nkQoi03/98UpIibSGXY5f1wdEcDsl7M8eNxhh2A4aGw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js" integrity="sha512-Ki5lCSAqYtRQx3DgL+ieiTfUxrM0Ku5hM6bvXg2t7GZXbdBAdcGV/OUjEWyqTzYnUeRZPGmO8rUPaaFKZqi2OQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+    window.onload = function() {
+      const ui = SwaggerUIBundle({
+        url: "swagger.yaml",    // Chemin relatif par rapport à index.html
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        layout: "StandaloneLayout"
+      });
+      window.ui = ui;
+    };
+  </script>
+</body>
+</html>

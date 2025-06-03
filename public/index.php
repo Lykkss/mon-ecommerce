@@ -86,6 +86,9 @@ $router->get ('/admin/users',               [UserController::class, 'index']);
 $router->get ('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editForm']);
 $router->post('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editSubmit']);
 $router->post('/admin/users/delete/(?P<id>\d+)', [UserController::class, 'delete']);
+$router->get('/admin/users/create', [UserController::class, 'createForm']);
+$router->post('/admin/users/create', [UserController::class, 'createSubmit']);
+
 
 // --- Dispatch final (affiche la page ou 404/403) ---
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);

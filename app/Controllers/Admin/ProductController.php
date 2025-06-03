@@ -30,15 +30,15 @@ class ProductController
     public function createSubmit(): void
     {
         // Validation minimale
-        $title = trim($_POST['title'] ?? '');
+        $name  = trim($_POST['name'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
 
         $errors = [];
-        if ($title === '')     $errors[] = 'Le titre est requis.';
-        if ($price <= 0)       $errors[] = 'Le prix doit être positif.';
-        if ($stock < 0)        $errors[] = 'Le stock doit être ≥ 0.';
+        if ($name === '')   $errors[] = 'Le nom est requis.';
+        if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
+        if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
 
         // Upload d’image
         $imagePath = null;
@@ -63,11 +63,10 @@ class ProductController
 
         // Création du produit
         $productId = Product::create([
-            'title'       => $title,
+            'name'        => $name,
             'description' => $desc,
             'price'       => $price,
             'image'       => $imagePath,
-            'author_id'   => $_SESSION['user_id'],
         ]);
 
         // Initialisation du stock
@@ -106,15 +105,15 @@ class ProductController
         }
 
         // Validation
-        $title = trim($_POST['title'] ?? '');
+        $name  = trim($_POST['name'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
 
         $errors = [];
-        if ($title === '')   $errors[] = 'Le titre est requis.';
-        if ($price <= 0)     $errors[] = 'Le prix doit être positif.';
-        if ($stock < 0)      $errors[] = 'Le stock doit être ≥ 0.';
+        if ($name === '')   $errors[] = 'Le nom est requis.';
+        if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
+        if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
 
         // Upload éventuel
         $imagePath = $product['image'];
@@ -139,7 +138,7 @@ class ProductController
 
         // Mise à jour
         Product::update($id, [
-            'title'       => $title,
+            'name'        => $name,
             'description' => $desc,
             'price'       => $price,
             'image'       => $imagePath,
