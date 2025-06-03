@@ -30,18 +30,21 @@ class User
 
     /**
      * Crée un nouvel utilisateur
+     *
+     * Attente : $data['password'] est déjà un hash Bcrypt si on l'appelle depuis le contrôleur.
      */
     public static function create(array $data): int
     {
         $pdo = Database::getInstance();
         $stmt = $pdo->prepare(
-            "INSERT INTO users (username, email, password, fullname, role)"
-          . " VALUES (:u, :e, :p, :f, :r)"
+            "INSERT INTO users (username, email, password, fullname, role)
+             VALUES (:u, :e, :p, :f, :r)"
         );
         $stmt->execute([
-            'u' => $data['username'],  
-            'e' => $data['email'],     
-            'p' => password_hash($data['password'], PASSWORD_BCRYPT),
+            'u' => $data['username'],
+            'e' => $data['email'],
+            // On reçoit $data['password'] déjà haché en amont :
+            'p' => $data['password'],
             'f' => $data['fullname'] ?? null,
             'r' => $data['role'] ?? 'user',
         ]);
@@ -49,7 +52,7 @@ class User
     }
 
     /**
-     * Récupère tous les utilisateurs
+     * Récupère tous les utilisateurs (pour lister en back‐office)
      */
     public static function all(): array
     {
@@ -60,21 +63,28 @@ class User
 
     /**
      * Met à jour un utilisateur
+     *
+     * Si $data['password'] est renseigné, on s’attend à ce que ce soit un mot de passe en clair ;
+     * on l’hache à ce stade.
      */
     public static function update(int $id, array $data): void
     {
-        $sets = [];
+        $sets   = [];
         $params = [];
+
         foreach (['username','email','fullname','role'] as $field) {
             if (array_key_exists($field, $data)) {
-                $sets[] = "`$field` = :$field";
+                $sets[]         = "`$field` = :$field";
                 $params[$field] = $data[$field];
             }
         }
+
         if (isset($data['password'])) {
-            $sets[] = "`password` = :password";
+            // Ici, on reçoit le mot de passe en clair => on le hache
+            $sets[]              = "`password` = :password";
             $params['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
         }
+
         $params['id'] = $id;
         $sql = "UPDATE users SET " . implode(', ', $sets) . " WHERE id = :id";
         $stmt = Database::getInstance()->prepare($sql);

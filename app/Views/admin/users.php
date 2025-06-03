@@ -2,7 +2,7 @@
 
 <div class="flex justify-between items-center mb-4">
   <h2 class="text-2xl font-bold">Tous les utilisateurs</h2>
-  <a href="/admin/users/edit/0"
+  <a href="/admin/users/create"
      class="px-4 py-2 bg-green-600 text-white rounded">
     Créer un utilisateur
   </a>
@@ -19,12 +19,12 @@
     </tr>
   </thead>
   <tbody>
-    <?php foreach($users as $u): ?>
+    <?php foreach ($users as $u): ?>
     <tr class="border-t">
       <td class="p-2"><?= $u['id'] ?></td>
       <td class="p-2"><?= htmlspecialchars($u['username'], ENT_QUOTES) ?></td>
-      <td class="p-2"><?= htmlspecialchars($u['email'],    ENT_QUOTES) ?></td>
-      <td class="p-2"><?= htmlspecialchars($u['role'],     ENT_QUOTES) ?></td>
+      <td class="p-2"><?= htmlspecialchars($u['email'], ENT_QUOTES) ?></td>
+      <td class="p-2"><?= htmlspecialchars($u['role'], ENT_QUOTES) ?></td>
       <td class="p-2 space-x-2">
         <a href="/admin/users/edit/<?= $u['id'] ?>"
            class="text-blue-600">Éditer</a>

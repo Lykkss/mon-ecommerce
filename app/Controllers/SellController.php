@@ -107,7 +107,7 @@ class SellController
         );
         $stmt2->execute([$qty, $id]);
 
-        header('Location: /produit/' . $id); exit;
+        header('Location: /compte' . $id); exit;
     }
 
     public function delete(int $id): void

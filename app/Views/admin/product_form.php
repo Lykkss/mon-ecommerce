@@ -4,8 +4,8 @@
 </h2>
 <form action="<?= !empty($adminProductsEdit) ? '/admin/products/edit/'.$product['id'] : '/admin/products/create' ?>" method="post" enctype="multipart/form-data" class="bg-white p-6 rounded shadow space-y-4">
   <label class="block">
-    Titre
-    <input type="text" name="title" required value="<?= htmlspecialchars($product['title'] ?? '',ENT_QUOTES) ?>" class="w-full border rounded p-2">
+    Nom
+    <input type="text" name="name" required value="<?= htmlspecialchars($product['name'] ?? '',ENT_QUOTES) ?>" class="w-full border rounded p-2">
   </label>
   <label class="block">
     Description
@@ -17,7 +17,7 @@
   </label>
   <label class="block">
     Stock
-    <input type="number" name="stock" required value="<?= htmlspecialchars($product['stock'] ?? '',ENT_QUOTES) ?>" class="w-full border rounded p-2">
+    <input type="number" name="stock" required value="<?= htmlspecialchars($stock ?? '',ENT_QUOTES) ?>" class="w-full border rounded p-2">
   </label>
   <label class="block">
     Image
