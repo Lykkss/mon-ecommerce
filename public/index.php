@@ -44,6 +44,7 @@ $router->post('/panier/supprimer',        [CartController::class, 'remove']);
 // --- Checkout / commande (protégé) ---
 $router->get ('/commande',                [CheckoutController::class, 'form']);
 $router->post('/commande/valider',        [CheckoutController::class, 'submit']);
+$router->get('/terms', function() {$terms = true; require __DIR__ . '/../app/Views/layout.php';});
 
 // --- Mon compte & factures (protégé) ---
 $router->get ('/compte',                           [AccountController::class, 'index']);
