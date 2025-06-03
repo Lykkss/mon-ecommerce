@@ -8,6 +8,8 @@ class HomeController
 {
     public function index(): void
     {
+        // Récupérer tous les produits (avec quantité de stock si besoin)
+        // Ici on choisit la version “a” : on ne ramène pas le stock au controller
         $products = Product::all();
         require __DIR__ . '/../Views/layout.php';
     }

@@ -21,7 +21,11 @@ class AccountController
         // === NOUVEAU : on récupère aussi les produits “à vendre” de ce user ===
         $db = Database::getInstance();
         $stmt = $db->prepare(
-            "SELECT p.id, p.name AS title, p.price, p.image, COALESCE(s.quantity,0) AS stock
+            "SELECT p.id,
+                    p.name AS title,
+                    p.price,
+                    p.image,
+                    COALESCE(s.quantity, 0) AS stock
              FROM products p
              LEFT JOIN stock s ON s.article_id = p.id
              WHERE p.author_id = :uid
