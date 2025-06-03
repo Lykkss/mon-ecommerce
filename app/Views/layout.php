@@ -60,67 +60,81 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
-      // 5) Formulaire de connexion en pleine page
+      // 1) Formulaire de connexion (page /login)
       if (!empty($login)):
           include __DIR__ . '/login.php';
-          return;  // on arrête ici
+          return;
 
-      // 1) Panier
-      elseif (isset($items) && !isset($invoice)): 
-          include __DIR__ . '/cart.php';
-
-      // 2) Admin Dashboard
-      elseif (!empty($adminDashboard)): 
-          include __DIR__ . '/admin/dashboard.php';
-
-      // 3) Admin produits
-      elseif (!empty($adminProducts)):
-          include __DIR__ . '/admin/products.php';
-      elseif (!empty($adminProductsCreate) || !empty($adminProductsEdit)):
-          include __DIR__ . '/admin/product_form.php';
-
-      // 4) Admin users
-      elseif (!empty($adminUsers)):
-          include __DIR__ . '/admin/users.php';
-      elseif (!empty($adminUsersCreate) || !empty($adminUsersEdit)):
-          include __DIR__ . '/admin/user_form.php';
-
-      // 5) Admin Stock
-      elseif (!empty($adminStock)):
-          include __DIR__ . '/admin/stock.php';
-
-      // 6) Public views: Inscription
-      elseif (!empty($register)):
-          include __DIR__ . '/register.php';
-      // 7) Public: Détail produit
-      elseif (!empty($product)):
-          include __DIR__ . '/show.php';
-      // 8) Public: Checkout
+      // 2) Checkout (page /commande) — on vérifie d’abord ce drapeau
       elseif (!empty($checkout)):
           include __DIR__ . '/checkout.php';
-      // 9) Public: Page Merci
+          return;
+
+      // 3) Page de succès de commande
       elseif (!empty($orderSuccess)):
           include __DIR__ . '/order_success.php';
-      // 10) Public: Sell / Édition
-      elseif (!empty($sell)):
-          include __DIR__ . '/sell.php';
-      elseif (!empty($edit)):
-          include __DIR__ . '/edit.php';
-      // 11) Espace Mon compte
+          return;
+
+      // 4) Panier (page /panier)
+      elseif (isset($items) && !isset($invoice)):
+          include __DIR__ . '/cart.php';
+          return;
+
+      // 5) Dashboard Admin (/admin)
+      elseif (!empty($adminDashboard)):
+          include __DIR__ . '/admin/dashboard.php';
+          return;
+
+      // 6) Admin – produits
+      elseif (!empty($adminProducts)):
+          include __DIR__ . '/admin/products.php';
+          return;
+      elseif (!empty($adminProductsCreate) || !empty($adminProductsEdit)):
+          include __DIR__ . '/admin/product_form.php';
+          return;
+
+      // 7) Admin – utilisateurs
+      elseif (!empty($adminUsers)):
+          include __DIR__ . '/admin/users.php';
+          return;
+      elseif (!empty($adminUsersCreate) || !empty($adminUsersEdit)):
+          include __DIR__ . '/admin/user_form.php';
+          return;
+
+      // 8) Admin – stock
+      elseif (!empty($adminStock)):
+          include __DIR__ . '/admin/stock.php';
+          return;
+
+      // 9) Public – Inscription (/register)
+      elseif (!empty($register)):
+          include __DIR__ . '/register.php';
+          return;
+
+      // 10) Public – Détail produit (/produit/{id})
+      elseif (!empty($product)):
+          include __DIR__ . '/show.php';
+          return;
+
+      // 11) Public – Espace Mon compte (/compte)
       elseif (!empty($account)):
           include __DIR__ . '/account.php';
+          return;
 
-      // 12) Liste des factures
+      // 12) Public – Liste des factures (/compte/factures)
       elseif (isset($invoices)):
           include __DIR__ . '/invoice_list.php';
+          return;
 
-      // 13) Détail d’une facture
+      // 13) Public – Détail facture (/compte/facture/{id})
       elseif (isset($invoice) && isset($items)):
           include __DIR__ . '/invoice_detail.php';
+          return;
 
       // 14) Page d’accueil par défaut
       else:
           include __DIR__ . '/home.php';
+          return;
       endif;
     ?>
   </main>
