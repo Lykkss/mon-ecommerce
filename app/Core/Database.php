@@ -10,10 +10,10 @@ class Database
 
     private function __construct()
     {
-        $host = 'db';
-        $db   = 'pokemon_db';
-        $user = 'root';
-        $pass = 'root';
+        $host = getenv('DB_HOST') ?: 'localhost';
+        $db   = getenv('DB_NAME') ?: 'pokemon_db';
+        $user = getenv('DB_USER') ?: 'root';
+        $pass = getenv('DB_PASS') ?: 'root';
         $dsn  = "mysql:host={$host};dbname={$db};charset=utf8mb4";
 
         try {

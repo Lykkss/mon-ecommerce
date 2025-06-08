@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: E-commerce PHP API
   version: "1.0.0"
@@ -586,6 +586,256 @@ paths:
           description: Produit non trouvé
 
   # --- PANEL ADMIN (protégé) ---
+  /products/create:
+    get:
+      summary: Formulaire création produit
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Création d’un produit
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - stock
+                - category_id
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  minimum: 0
+                stock:
+                  type: integer
+                  minimum: 0
+                category_id:
+                  type: integer
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après création (succès ou erreur)
+
+  /products/edit/{id}:
+    get:
+      summary: Formulaire édition produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Mise à jour produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  minimum: 0
+                stock:
+                  type: integer
+                  minimum: 0
+                category_id:
+                  type: integer
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après modification
+
+  /products/delete/{id}:
+    post:
+      summary: Supprime un produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '302':
+          description: Redirection après suppression
+
+  /stock:
+    get:
+      summary: Affiche la gestion du stock
+      responses:
+        '200':
+          description: Page HTML gestion stock
+    post:
+      summary: Met à jour la quantité en stock
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - article_id
+                - quantity
+              properties:
+                article_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 0
+      responses:
+        '302':
+          description: Redirection après mise à jour
+
+  /users:
+    get:
+      summary: Liste tous les utilisateurs
+      responses:
+        '200':
+          description: Liste utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    username:
+                      type: string
+                    email:
+                      type: string
+                    role:
+                      type: string
+                    fullname:
+                      type: string
+                    avatar_url:
+                      type: string
+
+  /users/create:
+    get:
+      summary: Formulaire création utilisateur
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Création utilisateur
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - role
+                - fullname
+                - password
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                fullname:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après création
+
+  /users/edit/{id}:
+    get:
+      summary: Formulaire édition utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Mise à jour utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                fullname:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après mise à jour
+
+  /users/delete/{id}:
+    post:
+      summary: Supprime un utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '302':
+          description: Redirection après suppression
+  
   /admin:
     get:
       tags:
@@ -809,3 +1059,284 @@ paths:
           description: Utilisateur supprimé
         '404':
           description: Utilisateur non trouvé
+/products:
+    get:
+      summary: Liste tous les produits avec infos détaillées
+      responses:
+        '200':
+          description: Liste des produits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    price:
+                      type: number
+                    stock_quantity:
+                      type: integer
+                    author_name:
+                      type: string
+                    category_name:
+                      type: string
+                    comment_count:
+                      type: integer
+                    favorite_count:
+                      type: integer
+
+/products/create:
+    get:
+      summary: Formulaire création produit
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Création d’un produit
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - stock
+                - category_id
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  minimum: 0
+                stock:
+                  type: integer
+                  minimum: 0
+                category_id:
+                  type: integer
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après création (succès ou erreur)
+
+/products/edit/{id}:
+    get:
+      summary: Formulaire édition produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Mise à jour produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  minimum: 0
+                stock:
+                  type: integer
+                  minimum: 0
+                category_id:
+                  type: integer
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après modification
+
+/products/delete/{id}:
+    post:
+      summary: Supprime un produit
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '302':
+          description: Redirection après suppression
+
+/stock:
+    get:
+      summary: Affiche la gestion du stock
+      responses:
+        '200':
+          description: Page HTML gestion stock
+    post:
+      summary: Met à jour la quantité en stock
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - article_id
+                - quantity
+              properties:
+                article_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 0
+      responses:
+        '302':
+          description: Redirection après mise à jour
+
+/users:
+    get:
+      summary: Liste tous les utilisateurs
+      responses:
+        '200':
+          description: Liste utilisateurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    username:
+                      type: string
+                    email:
+                      type: string
+                    role:
+                      type: string
+                    fullname:
+                      type: string
+                    avatar_url:
+                      type: string
+
+/users/create:
+    get:
+      summary: Formulaire création utilisateur
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Création utilisateur
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - role
+                - fullname
+                - password
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                fullname:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après création
+
+/users/edit/{id}:
+    get:
+      summary: Formulaire édition utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '200':
+          description: Formulaire (HTML)
+    post:
+      summary: Mise à jour utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  type: string
+                fullname:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirection après mise à jour
+
+/users/delete/{id}:
+    post:
+      summary: Supprime un utilisateur
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+      responses:
+        '302':
+          description: Redirection après suppression
