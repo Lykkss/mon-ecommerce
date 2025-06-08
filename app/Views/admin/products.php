@@ -26,7 +26,7 @@
       <td class="p-2">
         <?php if (!empty($p['image'])): ?>
           <img
-            src="/assets/products/<?= htmlspecialchars($p['image'], ENT_QUOTES) ?>"
+            src="/<?= htmlspecialchars($p['image'], ENT_QUOTES) ?>"
             alt="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
             class="w-16 h-16 object-cover rounded"
           >

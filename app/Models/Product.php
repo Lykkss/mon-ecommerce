@@ -65,7 +65,7 @@ class Product
             'n'  => $data['name'],
             'd'  => $data['description'],
             'p'  => $data['price'],
-            'i'  => $data['image'],   // mise à jour même si chaîne vide
+            'i'  => $data['image'], 
             'id' => $id,
         ]);
     }

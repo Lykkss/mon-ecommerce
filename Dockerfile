@@ -17,6 +17,13 @@ RUN apt-get update \
  && apt-get install -y libpng-dev libonig-dev libxml2-dev zip unzip git \
  && docker-php-ext-install pdo_mysql mbstring xml gd
 
+# 3bis) On augmente les limites d'upload (10M max)
+RUN printf "\
+upload_max_filesize = 10M\n\
+post_max_size       = 12M\n\
+memory_limit        = 128M\n" \
+  > /usr/local/etc/php/conf.d/uploads.ini
+
 # 4) Installation de Composer & dépendances
 WORKDIR /var/www/html
 COPY composer.json ./ 
