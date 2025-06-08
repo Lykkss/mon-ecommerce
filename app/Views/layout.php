@@ -49,6 +49,7 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
           <a href="/admin" class="hover:underline font-semibold">Dashboard Admin</a>
         <?php endif; ?>
         <a href="/compte" class="hover:underline">Mon compte</a>
+        <a href="/favoris" class="hover:underline">Mes favoris</a>
         <a href="/panier" class="hover:underline">Panier (<?= array_sum($_SESSION['cart'] ?? []) ?>)</a>
         <a href="/logout" class="hover:underline">Déconnexion</a>
       <?php else: ?>
@@ -60,27 +61,27 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
 
   <main class="container mx-auto p-4 flex-grow">
     <?php
-      // 1) Formulaire de connexion (page /login)
+      // 1) Connexion
       if (!empty($login)):
           include __DIR__ . '/login.php';
           return;
 
-      // 2) Checkout (page /commande)
+      // 2) Checkout
       elseif (!empty($checkout)):
           include __DIR__ . '/checkout.php';
           return;
 
-      // 3) Page de succès de commande
+      // 3) Succès de commande
       elseif (!empty($orderSuccess)):
           include __DIR__ . '/order_success.php';
           return;
 
-      // 4) Panier (page /panier)
+      // 4) Panier
       elseif (isset($items) && !isset($invoice)):
           include __DIR__ . '/cart.php';
           return;
 
-      // 5) Dashboard Admin (/admin)
+      // 5) Dashboard Admin
       elseif (!empty($adminDashboard)):
           include __DIR__ . '/admin/dashboard.php';
           return;
@@ -106,42 +107,57 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
           include __DIR__ . '/admin/stock.php';
           return;
 
-      // 9) Public – Inscription (/register)
+      // 9) Admin – commentaires
+      elseif (!empty($adminComments)):
+          include __DIR__ . '/admin/comments.php';
+          return;
+
+      // 10) Admin – favoris
+      elseif (!empty($adminFavorites)):
+          include __DIR__ . '/admin/favorites.php';
+          return;
+
+      // 11) Inscription
       elseif (!empty($register)):
           include __DIR__ . '/register.php';
           return;
 
-      // 10) Public – Détail produit (/produit/{id})
-      elseif (!empty($product)):
+      // 12) Détail produit
+      elseif (!empty($productView)):
           include __DIR__ . '/show.php';
           return;
 
-      // 11) Public – Espace Mon compte (/compte)
+      // 13) Mon compte
       elseif (!empty($account)):
           include __DIR__ . '/account.php';
           return;
 
-      // 12) Public – Liste des factures (/compte/factures)
+      // 14) Liste factures
       elseif (isset($invoices)):
           include __DIR__ . '/invoice_list.php';
           return;
 
-      // 13) Public – Détail facture (/compte/facture/{id})
+      // 15) Détail facture
       elseif (isset($invoice) && isset($items)):
           include __DIR__ . '/invoice_detail.php';
           return;
 
-      // 14) Public – Vendre / Éditer un produit
+      // 16) Vendre / éditer un produit
       elseif (!empty($sell) || !empty($edit)):
           include __DIR__ . '/sell.php';
           return;
 
-      // 15) Terms
+      // 17) Mes favoris
+      elseif (!empty($favorites)):
+          include __DIR__ . '/favorites.php';
+          return;
+
+      // 18) Terms
       elseif (!empty($terms)):
           include __DIR__ . '/terms.php';
           return;
 
-      // 16) Page d’accueil par défaut
+      // 19) Page d’accueil
       else:
           include __DIR__ . '/home.php';
           return;

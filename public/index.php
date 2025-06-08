@@ -12,6 +12,7 @@ use App\Controllers\{
     AccountController,
     SellController,
     InvoiceController,
+    FavoritesController,         // ← ajouté
     StockController as PublicStockController
 };
 use App\Controllers\Admin\{
@@ -39,6 +40,8 @@ $router->get ('/produit/(?P<id>\d+)',     [HomeController::class, 'show']);
 $router->post('/produit/(?P<id>\d+)/comment',  [HomeController::class, 'addComment']);
 $router->post('/produit/(?P<id>\d+)/favorite', [HomeController::class, 'toggleFavorite']);
 
+// --- Mes favoris (protégé) ---
+$router->get('/favoris',                  [FavoritesController::class, 'index']);
 
 // --- Panier (protégé) ---
 $router->post('/panier/ajouter',          [CartController::class, 'add']);
@@ -48,7 +51,10 @@ $router->post('/panier/supprimer',        [CartController::class, 'remove']);
 // --- Checkout / commande (protégé) ---
 $router->get ('/commande',                [CheckoutController::class, 'form']);
 $router->post('/commande/valider',        [CheckoutController::class, 'submit']);
-$router->get('/terms', function() {$terms = true; require __DIR__ . '/../app/Views/layout.php';});
+$router->get('/terms', function() {
+    $terms = true;
+    require __DIR__ . '/../app/Views/layout.php';
+});
 
 // --- Mon compte & factures (protégé) ---
 $router->get ('/compte',                           [AccountController::class, 'index']);
@@ -96,5 +102,14 @@ $router->get ('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editForm
 $router->post('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editSubmit']);
 $router->post('/admin/users/delete/(?P<id>\d+)', [UserController::class, 'delete']);
 
-// Dispatch final (affiche la page ou 404/403)
+// ADMIN – commentaires
+$router->get  ('/admin/comments',                   [\App\Controllers\Admin\CommentController::class, 'index']);
+$router->post ('/admin/comments/delete/(?P<id>\d+)', [\App\Controllers\Admin\CommentController::class, 'delete']);
+
+// ADMIN – favoris
+$router->get  ('/admin/favorites',                   [\App\Controllers\Admin\FavoriteController::class, 'index']);
+$router->post ('/admin/favorites/delete/(?P<user_id>\d+)-(?P<product_id>\d+)', [\App\Controllers\Admin\FavoriteController::class, 'delete']);
+
+
+// --- Dispatch final (affiche la page ou 404/403) ---
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);

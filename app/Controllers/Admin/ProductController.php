@@ -18,24 +18,27 @@ class ProductController
         $db = Database::getInstance();
         $products = $db->query(
             'SELECT 
-                p.id,
-                p.name,
-                p.description,
-                p.price,
-                p.image,
-                COALESCE(s.quantity,0) AS stock,
-                COALESCE(c.comments_count,0) AS comments_count,
-                COALESCE(f.favorites_count,0) AS favorites_count
+                 p.id,
+                 p.name,
+                 p.description,
+                 p.price,
+                 p.image,
+                 COALESCE(s.quantity,0)            AS stock,
+                 COALESCE(c.comments_count,0)     AS comments_count,
+                 COALESCE(f.favorites_count,0)    AS favorites_count,
+                 u.id                             AS author_id,
+                 u.fullname                       AS author_name
              FROM products p
              LEFT JOIN stock s ON s.article_id = p.id
              LEFT JOIN (
                  SELECT product_id, COUNT(*) AS comments_count
-                 FROM comments GROUP BY product_id
+                   FROM comments GROUP BY product_id
              ) c ON c.product_id = p.id
              LEFT JOIN (
                  SELECT product_id, COUNT(*) AS favorites_count
-                 FROM favorites GROUP BY product_id
+                   FROM favorites GROUP BY product_id
              ) f ON f.product_id = p.id
+             LEFT JOIN users u ON u.id = p.author_id
              ORDER BY p.created_at DESC'
         )->fetchAll(\PDO::FETCH_ASSOC);
 

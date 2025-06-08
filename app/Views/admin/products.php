@@ -1,9 +1,8 @@
 <?php
-// S'assurer que $adminProducts est toujours défini et de type tableau
-$adminProducts = (isset($adminProducts) && is_array($adminProducts)) ? $adminProducts : [];
+// app/Views/admin/products.php
 
-// Définit le répertoire public pour retrouver les fichiers uploadés
-$publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
+$adminProducts = $adminProducts ?? [];
+$publicDir     = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
 ?>
 
 <div class="flex justify-between items-center mb-4">
@@ -21,16 +20,16 @@ $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
       <th class="p-2">Nom</th>
       <th class="p-2">Prix</th>
       <th class="p-2">Stock</th>
+      <th class="p-2">Auteur</th>                      <!-- ← ajouté -->
       <th class="p-2">Statut</th>
       <th class="p-2">Actions</th>
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($adminProducts as $p): ?>
-      <?php
+    <?php foreach ($adminProducts as $p): 
         $relPath  = ltrim($p['image'] ?? '', '/');
         $fullPath = $publicDir . '/' . $relPath;
-      ?>
+    ?>
       <tr class="border-t">
         <td class="p-2"><?= htmlspecialchars($p['id'], ENT_QUOTES) ?></td>
         <td class="p-2">
@@ -46,6 +45,9 @@ $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
         <td class="p-2"><?= number_format($p['price'], 2, ',', ' ') ?> €</td>
         <td class="p-2"><?= htmlspecialchars($p['stock'], ENT_QUOTES) ?></td>
         <td class="p-2">
+          <?= htmlspecialchars($p['author_name'] ?? 'Inconnu', ENT_QUOTES) ?> <!-- ← affiche l’auteur -->
+        </td>
+        <td class="p-2">
           <?php if ((int)$p['stock'] > 0): ?>
             <span class="text-green-600 font-semibold">Stock suffisant</span>
           <?php else: ?>
@@ -53,8 +55,8 @@ $publicDir = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
           <?php endif; ?>
         </td>
         <td class="p-2 space-x-2">
-          <a href="/admin/products/edit/<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>" class="text-blue-600">Éditer</a>
-          <form action="/admin/products/delete/<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>" method="post" class="inline">
+          <a href="/admin/products/edit/<?= $p['id'] ?>" class="text-blue-600">Éditer</a>
+          <form action="/admin/products/delete/<?= $p['id'] ?>" method="post" class="inline">
             <button onclick="return confirm('Confirmer ?')" class="text-red-600">Supprimer</button>
           </form>
         </td>
