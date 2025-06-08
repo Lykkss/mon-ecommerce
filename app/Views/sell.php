@@ -8,10 +8,7 @@
 // Détermine le mode (création vs édition)
 $isEdit = !empty($edit);
 
-// Si on est en mode édition, on part de la variable $product fournie par le contrôleur
-// Sinon, on initialise un produit "vide" pour éviter les notices
 if ($isEdit) {
-    // $product doit venir du controller : assurez-vous qu'il contient toutes ces clés
     $product += [
         'id'          => 0,
         'title'       => '',
@@ -19,7 +16,7 @@ if ($isEdit) {
         'price'       => '',
         'image'       => null,
     ];
-    $stock = $stock ?? 0; // dans editForm, $stock doit être défini
+    $stock = $stock ?? 0; 
 } else {
     $product = [
         'id'          => 0,

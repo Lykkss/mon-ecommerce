@@ -29,7 +29,6 @@ $catSel      = (int)($_GET['category_id'] ?? 0);
            class="w-full border rounded p-2">
   </div>
 
-  <!-- Catégorie -->
 <!-- Catégorie -->
 <div>
   <label class="block text-sm font-medium">Catégorie</label>

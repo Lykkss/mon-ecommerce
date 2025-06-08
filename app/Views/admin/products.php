@@ -20,7 +20,7 @@ $publicDir     = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
       <th class="p-2">Nom</th>
       <th class="p-2">Prix</th>
       <th class="p-2">Stock</th>
-      <th class="p-2">Auteur</th>                      <!-- ← ajouté -->
+      <th class="p-2">Auteur</th>                     
       <th class="p-2">Statut</th>
       <th class="p-2">Actions</th>
     </tr>
@@ -45,7 +45,7 @@ $publicDir     = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
         <td class="p-2"><?= number_format($p['price'], 2, ',', ' ') ?> €</td>
         <td class="p-2"><?= htmlspecialchars($p['stock'], ENT_QUOTES) ?></td>
         <td class="p-2">
-          <?= htmlspecialchars($p['author_name'] ?? 'Inconnu', ENT_QUOTES) ?> <!-- ← affiche l’auteur -->
+          <?= htmlspecialchars($p['author_name'] ?? 'Inconnu', ENT_QUOTES) ?>
         </td>
         <td class="p-2">
           <?php if ((int)$p['stock'] > 0): ?>

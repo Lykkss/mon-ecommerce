@@ -139,9 +139,9 @@ class CheckoutController
             ")->execute(['id' => $invoiceId]);
 
         } elseif ($method === 'credit_card') {
-            // TODO: intégrez votre passerelle CB ici
+            
         } elseif ($method === 'paypal') {
-            // TODO: intégrez votre passerelle PayPal ici
+            
         } else {
             $_SESSION['errors'] = ['Méthode de paiement invalide.'];
             header('Location: /commande');

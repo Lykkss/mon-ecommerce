@@ -63,7 +63,7 @@ class Product
             'p' => $data['price'],
             'i' => $data['image'],
             'a' => $data['author_id'],
-            'c' => $data['category_id'],  // null si pas de catégorie
+            'c' => $data['category_id'],
         ]);
         return (int)$db->lastInsertId();
     }

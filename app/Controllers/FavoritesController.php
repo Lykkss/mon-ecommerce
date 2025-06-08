@@ -32,7 +32,7 @@ class FavoritesController
             }
         }
 
-        $favorites = true;  // flag pour layout.php
+        $favorites = true;
         require __DIR__ . '/../Views/layout.php';
     }
 }

@@ -10,7 +10,7 @@ class Database
 
     private function __construct()
     {
-        $host = 'db';             // Nom du service Docker
+        $host = 'db';
         $db   = 'pokemon_db';
         $user = 'root';
         $pass = 'root';
