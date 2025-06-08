@@ -8,9 +8,21 @@
 // Détermine le mode (création vs édition)
 $isEdit = !empty($edit);
 
-// Variables par défaut pour éviter les notices
-if (!$isEdit) {
-    $prod = [
+// Si on est en mode édition, on part de la variable $product fournie par le contrôleur
+// Sinon, on initialise un produit "vide" pour éviter les notices
+if ($isEdit) {
+    // $product doit venir du controller : assurez-vous qu'il contient toutes ces clés
+    $product += [
+        'id'          => 0,
+        'title'       => '',
+        'description' => '',
+        'price'       => '',
+        'image'       => null,
+    ];
+    $stock = $stock ?? 0; // dans editForm, $stock doit être défini
+} else {
+    $product = [
+        'id'          => 0,
         'title'       => '',
         'description' => '',
         'price'       => '',
@@ -24,7 +36,7 @@ $ts = time();
 
 // URL du formulaire et textes selon le mode
 $formAction = $isEdit
-    ? '/edit/' . (int)$prod['id']
+    ? '/edit/' . (int)$product['id']
     : '/sell';
 
 $formTitle = $isEdit
@@ -57,7 +69,7 @@ $btnText = $isEdit
     <input type="text"
            name="title"
            required
-           value="<?= htmlspecialchars($prod['title'], ENT_QUOTES) ?>"
+           value="<?= htmlspecialchars($product['title'] ?? '', ENT_QUOTES) ?>"
            class="w-full border rounded p-2">
   </label>
 
@@ -66,7 +78,7 @@ $btnText = $isEdit
     Description
     <textarea name="description"
               class="w-full border rounded p-2"
-              rows="4"><?= htmlspecialchars($prod['description'], ENT_QUOTES) ?></textarea>
+              rows="4"><?= htmlspecialchars($product['description'] ?? '', ENT_QUOTES) ?></textarea>
   </label>
 
   <!-- Prix -->
@@ -76,7 +88,7 @@ $btnText = $isEdit
            step="0.01"
            name="price"
            required
-           value="<?= htmlspecialchars($prod['price'], ENT_QUOTES) ?>"
+           value="<?= htmlspecialchars($product['price'] ?? '', ENT_QUOTES) ?>"
            class="w-full border rounded p-2">
   </label>
 
@@ -101,11 +113,11 @@ $btnText = $isEdit
            class="w-full border rounded p-2">
   </label>
 
-  <?php if ($isEdit && !empty($prod['image'])): ?>
+  <?php if ($isEdit && !empty($product['image'])): ?>
     <div>
       <span class="text-sm text-gray-600">Image actuelle :</span>
       <img id="image-preview"
-           src="/<?= htmlspecialchars($prod['image'], ENT_QUOTES) ?>?t=<?= $ts ?>"
+           src="/<?= htmlspecialchars($product['image'], ENT_QUOTES) ?>?t=<?= $ts ?>"
            alt="Aperçu"
            class="h-24 w-24 object-cover rounded mt-2">
     </div>
@@ -118,7 +130,7 @@ $btnText = $isEdit
 </form>
 
 <script>
-  const imgInput = document.getElementById('image-input');
+  const imgInput   = document.getElementById('image-input');
   const imgPreview = document.getElementById('image-preview');
   if (imgInput && imgPreview) {
     imgInput.addEventListener('change', () => {

@@ -1,22 +1,62 @@
 <?php
 namespace App\Controllers;
 
-use App\Models\Product;
-use App\Models\Stock;
+use App\Core\Database;
+use App\Models\Category;
 use App\Models\User;
 use App\Models\Comment;
 use App\Models\Favorite;
+use App\Models\Stock;
 
 class HomeController
 {
-    /**
+       /**
      * GET /
-     * Liste tous les produits
+     * Liste tous les produits, avec filtres par q, price_min, price_max, in_stock et category.
      */
     public function index(): void
     {
-        $products = Product::all();
+        $db = Database::getInstance();
+
+        // 1) Lecture des GET
+        $categoryId = isset($_GET['category_id'])
+        && ctype_digit($_GET['category_id'])
+        && (int)$_GET['category_id'] > 0
+        ? (int)$_GET['category_id']
+        : null;
+
+        // 2) Clause WHERE dynamique
+        $wheres = [];
+        $params = [];
+
+        if ($categoryId !== null) {
+        $wheres[]         = 'p.category_id = :cat';
+        $params['cat']    = $categoryId;
+        }
+
+        $whereSql = $wheres ? 'WHERE '.implode(' AND ', $wheres) : '';
+
+        // 3) Requête
+        $sql = "
+        SELECT
+        p.id, p.name, p.description, p.price, p.image,
+        COALESCE(s.quantity,0) AS stock,
+        p.category_id
+        FROM products p
+        LEFT JOIN stock s ON s.article_id = p.id
+        {$whereSql}
+        ORDER BY p.created_at DESC
+        ";
+        $stmt    = Database::getInstance()->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // 4) Charge les catégories
+        $categories = Category::all();
+
+        // 5) Envoie à la vue
         require __DIR__ . '/../Views/layout.php';
+
     }
 
     /**
@@ -25,7 +65,7 @@ class HomeController
      */
     public function show(int $id): void
     {
-        $product = Product::find($id);
+        $product = \App\Models\Product::find($id);
         if (!$product) {
             header("HTTP/1.0 404 Not Found");
             exit("Produit introuvable");
@@ -53,7 +93,6 @@ class HomeController
 
     /**
      * POST /produit/{id}/comment
-     * Ajoute un commentaire au produit
      */
     public function addComment(int $productId): void
     {
@@ -71,7 +110,6 @@ class HomeController
 
     /**
      * POST /produit/{id}/favorite
-     * Bascule le statut favori pour ce produit
      */
     public function toggleFavorite(int $productId): void
     {

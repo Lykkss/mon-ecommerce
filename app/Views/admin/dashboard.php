@@ -1,4 +1,4 @@
-<?php /* Dashboard */ ?>
+<?php /* app/Views/admin/dashboard.php */ ?>
 
 <!-- Statistiques en haut -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -20,22 +20,10 @@
     <p class="mt-4 text-4xl font-extrabold text-yellow-600"><?= number_format($totalSales,2,',',' ') ?> €</p>
   </div>
 
-  <!-- Commandes récentes -->
-  <div class="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition lg:col-span-2">
-    <h3 class="text-xl font-bold text-gray-700 mb-4">Commandes récentes</h3>
-    <ul class="space-y-2 text-gray-600">
-      <?php foreach($recentOrders as $inv): ?>
-      <li class="flex justify-between items-center">
-        <div>
-          <a href="/compte/facture/<?= $inv['id'] ?>" class="hover:text-blue-600">
-            <span class="font-medium"><?= htmlspecialchars($inv['id']) ?></span> —
-            <span><?= htmlspecialchars($inv['created_at']) ?></span>
-          </a>
-        </div>
-        <div class="font-semibold"><?= number_format($inv['total_amount'],2,',',' ') ?> €</div>
-      </li>
-      <?php endforeach; ?>
-    </ul>
+  <!-- Catégories (nouveau) -->
+  <div class="bg-white p-6 rounded-lg shadow-lg text-center transform hover:scale-105 transition">
+    <h3 class="text-xl font-bold text-gray-700">Catégories</h3>
+    <p class="mt-4 text-4xl font-extrabold text-purple-600"><?= $totalCategories ?></p>
   </div>
 </div>
 
@@ -58,12 +46,18 @@
     <h3 class="text-lg font-semibold">Gérer le stock</h3>
     <p class="mt-2 text-sm">Consulter et ajuster les quantités en stock</p>
   </a>
+
+  <a href="/admin/categories"
+     class="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg shadow-lg text-center transform hover:scale-105 transition">
+    <h3 class="text-lg font-semibold">Gérer les catégories</h3>
+    <p class="mt-2 text-sm">Ajouter ou supprimer des catégories</p>
+  </a>
 </div>
 
 <!-- Modération -->
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
   <a href="/admin/comments"
-     class="bg-purple-600 hover:bg-purple-700 text-white p-6 rounded-lg shadow-lg text-center transform hover:scale-105 transition">
+     class="bg-indigo-600 hover:bg-indigo-700 text-white p-6 rounded-lg shadow-lg text-center transform hover:scale-105 transition">
     <h3 class="text-lg font-semibold">Gérer les commentaires</h3>
     <p class="mt-2 text-sm">Modérer, supprimer des commentaires</p>
   </a>

@@ -1,8 +1,8 @@
 <?php
-
 namespace App\Controllers\Admin;
 
 use App\Core\Database;
+use App\Models\Category;
 
 class DashboardController
 {
@@ -18,9 +18,10 @@ class DashboardController
         $db = Database::getInstance();
 
         // 2) KPIs
-        $totalUsers    = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
-        $totalProducts = (int) $db->query('SELECT COUNT(*) FROM products')->fetchColumn();
-        $totalSales    = (float) $db->query('SELECT COALESCE(SUM(total_amount),0) FROM invoices')->fetchColumn();
+        $totalUsers      = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+        $totalProducts   = (int) $db->query('SELECT COUNT(*) FROM products')->fetchColumn();
+        $totalSales      = (float) $db->query('SELECT COALESCE(SUM(total_amount),0) FROM invoices')->fetchColumn();
+        $totalCategories = Category::countAll();  
 
         // 3) Dernières commandes
         $stmt = $db->prepare(

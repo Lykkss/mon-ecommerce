@@ -117,47 +117,52 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
           include __DIR__ . '/admin/favorites.php';
           return;
 
-      // 11) Inscription
+      // 11) Admin – catégories
+      elseif (!empty($adminCategories)):
+          include __DIR__ . '/admin/categories.php';
+          return;
+
+      // 12) Inscription
       elseif (!empty($register)):
           include __DIR__ . '/register.php';
           return;
 
-      // 12) Détail produit
+      // 13) Détail produit
       elseif (!empty($productView)):
           include __DIR__ . '/show.php';
           return;
 
-      // 13) Mon compte
+      // 14) Mon compte
       elseif (!empty($account)):
           include __DIR__ . '/account.php';
           return;
 
-      // 14) Liste factures
+      // 15) Liste factures
       elseif (isset($invoices)):
           include __DIR__ . '/invoice_list.php';
           return;
 
-      // 15) Détail facture
+      // 16) Détail facture
       elseif (isset($invoice) && isset($items)):
           include __DIR__ . '/invoice_detail.php';
           return;
 
-      // 16) Vendre / éditer un produit
+      // 17) Vendre / éditer un produit
       elseif (!empty($sell) || !empty($edit)):
           include __DIR__ . '/sell.php';
           return;
 
-      // 17) Mes favoris
+      // 18) Mes favoris
       elseif (!empty($favorites)):
           include __DIR__ . '/favorites.php';
           return;
 
-      // 18) Terms
+      // 19) Terms
       elseif (!empty($terms)):
           include __DIR__ . '/terms.php';
           return;
 
-      // 19) Page d’accueil
+      // 20) Page d’accueil
       else:
           include __DIR__ . '/home.php';
           return;
