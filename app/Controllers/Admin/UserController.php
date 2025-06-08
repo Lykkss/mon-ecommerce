@@ -1,73 +1,69 @@
 <?php
+// app/Controllers/Admin/UserController.php
+
 namespace App\Controllers\Admin;
 
+use App\Core\Database;
 use App\Models\User;
+use PDO;
+use PDOException;
 
 class UserController
 {
-    // 1) Liste tous les utilisateurs
+    /**
+     * GET /admin/users
+     * Liste tous les utilisateurs
+     */
     public function index(): void
     {
-        $users      = User::all();
+        $db    = Database::getInstance();
+        $users = $db->query('SELECT id, username, email, role, fullname FROM users ORDER BY id')->fetchAll(PDO::FETCH_ASSOC);
+
         $adminUsers = $users;
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    // 2) Formulaire de création
+    /**
+     * GET /admin/users/create
+     * Affiche le formulaire de création
+     */
     public function createForm(): void
     {
         $adminUsersCreate = true;
+        // on fournit un tableau vide pour préremplir le formulaire
+        $userToEdit = ['username'=>'', 'email'=>'', 'role'=>'user', 'fullname'=>'', 'avatar'=>null];
         require __DIR__ . '/../../Views/layout.php';
     }
 
-    // 3) Traitement de la création
+    /**
+     * POST /admin/users/create
+     * Traite la création
+     */
     public function createSubmit(): void
     {
         $username = trim($_POST['username'] ?? '');
-        $email    = trim($_POST['email'] ?? '');
+        $email    = trim($_POST['email']    ?? '');
         $role     = $_POST['role'] ?? 'user';
+        $fullname = trim($_POST['fullname'] ?? '');
         $password = $_POST['password'] ?? '';
-        $errors   = [];
 
-        // validation de base…
-        if ($username === '') {
-            $errors[] = "Le nom d'utilisateur est requis.";
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Email invalide.";
-        }
-        if (!in_array($role, ['user','admin'], true)) {
-            $errors[] = "Rôle invalide.";
-        }
-        if (strlen($password) < 6) {
-            $errors[] = "Le mot de passe doit faire au moins 6 caractères.";
-        }
+        $errors = [];
+        if ($username === '') $errors[] = 'Le username est requis.';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
+        if (strlen($password) < 6) $errors[] = 'Le mot de passe doit faire au moins 6 caractères.';
 
-        // --- gestion de l'avatar ---
+        // Gestion de l'avatar si upload
         $avatarPath = null;
-        if (!empty($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['avatar'];
-            if ($file['size'] > 2_000_000) {
-                $errors[] = "L’avatar ne doit pas dépasser 2 Mo.";
-            }
-            $finfo = new \finfo(FILEINFO_MIME_TYPE);
-            $mime  = $finfo->file($file['tmp_name']);
-            if (!in_array($mime, ['image/jpeg','image/png'], true)) {
-                $errors[] = "Format de l’avatar invalide (jpeg ou png).";
-            }
-            if (empty($errors)) {
+        if (!empty($_FILES['avatar']['tmp_name']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png'], true)) {
+                $errors[] = 'Avatar : format invalide.';
+            } else {
                 $dir = __DIR__ . '/../../../public/assets/avatars/';
-                if (!is_dir($dir)) {
-                    mkdir($dir, 0755, true);
-                }
-                $ext       = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $uniq      = uniqid("avatar_", true);
-                $filename  = "{$uniq}.{$ext}";
-                $destination = $dir . $filename;
-                if (!move_uploaded_file($file['tmp_name'], $destination)) {
-                    $errors[] = "Impossible de sauvegarder l’avatar.";
-                } else {
-                    $avatarPath = 'assets/avatars/' . $filename;
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $filename = 'user_'.time().'_'.uniqid().'.'.$ext;
+                if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dir.$filename)) {
+                    $avatarPath = 'assets/avatars/'.$filename;
                 }
             }
         }
@@ -78,27 +74,48 @@ class UserController
             exit;
         }
 
-        // hash du mot de passe
-        $hash = password_hash($password, PASSWORD_BCRYPT);
+        // Insère en base
+        $db = Database::getInstance();
+        $stmt = $db->prepare(
+            'INSERT INTO users (username, email, role, fullname, avatar, password_hash)
+             VALUES (:u, :e, :r, :f, :a, :p)'
+        );
+        $stmt->execute([
+            'u' => $username,
+            'e' => $email,
+            'r' => $role,
+            'f' => $fullname,
+            'a' => $avatarPath,
+            'p' => password_hash($password, PASSWORD_DEFAULT),
+        ]);
 
-        // création
-        $data = [
-            'username' => $username,
-            'email'    => $email,
-            'role'     => $role,
-            'password' => $hash,
-            'fullname' => $_POST['fullname'] ?? null,
-        ];
-        if ($avatarPath !== null) {
-            $data['avatar'] = $avatarPath;
-        }
-
-        User::create($data);
         $_SESSION['success'] = 'Utilisateur créé.';
         header('Location: /admin/users');
         exit;
     }
 
+    /**
+     * GET /admin/users/edit/{id}
+     * Affiche le formulaire d'édition
+     */
+    public function editForm(int $id): void
+    {
+        $user = User::findById($id);
+        if (!$user) {
+            $_SESSION['errors'] = ["Utilisateur #{$id} introuvable."];
+            header('Location: /admin/users');
+            exit;
+        }
+
+        $adminUsersEdit = true;
+        $userToEdit     = $user;
+        require __DIR__ . '/../../Views/layout.php';
+    }
+
+    /**
+     * POST /admin/users/edit/{id}
+     * Traite la modification
+     */
     public function editSubmit(int $id): void
     {
         $user = User::findById($id);
@@ -109,54 +126,37 @@ class UserController
         }
 
         $username = trim($_POST['username'] ?? '');
-        $email    = trim($_POST['email'] ?? '');
+        $email    = trim($_POST['email']    ?? '');
         $role     = $_POST['role'] ?? 'user';
+        $fullname = trim($_POST['fullname'] ?? '');
         $password = $_POST['password'] ?? '';
-        $errors   = [];
 
-        // validation de base…
-        if ($username === '') {
-            $errors[] = "Le nom d'utilisateur est requis.";
-        }
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = "Email invalide.";
-        }
-        if (!in_array($role, ['user','admin'], true)) {
-            $errors[] = "Rôle invalide.";
-        }
-        if ($password !== '' && strlen($password) < 6) {
-            $errors[] = "Le mot de passe doit faire au moins 6 caractères.";
+        $errors = [];
+        if ($username === '') $errors[] = 'Le username est requis.';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = 'Email invalide.';
+
+        // Si le mot de passe est renseigné, on le met à jour
+        $updatePwd = false;
+        if ($password !== '') {
+            if (strlen($password) < 6) {
+                $errors[] = 'Le mot de passe doit faire au moins 6 caractères.';
+            } else {
+                $updatePwd = true;
+            }
         }
 
-        // --- gestion de l'avatar ---
-        $avatarPath = null;
-        if (!empty($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-            $file = $_FILES['avatar'];
-            if ($file['size'] > 2_000_000) {
-                $errors[] = "L’avatar ne doit pas dépasser 2 Mo.";
-            }
-            $finfo = new \finfo(FILEINFO_MIME_TYPE);
-            $mime  = $finfo->file($file['tmp_name']);
-            if (!in_array($mime, ['image/jpeg','image/png'], true)) {
-                $errors[] = "Format de l’avatar invalide (jpeg ou png).";
-            }
-            if (empty($errors)) {
-                // suppression de l’ancien
-                if (!empty($user['avatar']) && file_exists(__DIR__ . '/../../../public/'.$user['avatar'])) {
-                    @unlink(__DIR__ . '/../../../public/'.$user['avatar']);
-                }
-                $dir       = __DIR__ . '/../../../public/assets/avatars/';
-                if (!is_dir($dir)) {
-                    mkdir($dir, 0755, true);
-                }
-                $ext       = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $uniq      = uniqid("avatar_", true);
-                $filename  = "{$uniq}.{$ext}";
-                $destination = $dir . $filename;
-                if (!move_uploaded_file($file['tmp_name'], $destination)) {
-                    $errors[] = "Impossible de sauvegarder l’avatar.";
-                } else {
-                    $avatarPath = 'assets/avatars/' . $filename;
+        // Avatar
+        $avatarPath = $user['avatar'];
+        if (!empty($_FILES['avatar']['tmp_name']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png'], true)) {
+                $errors[] = 'Avatar : format invalide.';
+            } else {
+                $dir = __DIR__ . '/../../../public/assets/avatars/';
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $filename = 'user_'.$id.'_'.time().'.'.$ext;
+                if (move_uploaded_file($_FILES['avatar']['tmp_name'], $dir.$filename)) {
+                    $avatarPath = 'assets/avatars/'.$filename;
                 }
             }
         }
@@ -167,30 +167,39 @@ class UserController
             exit;
         }
 
-        // préparation des données
-        $data = [
-            'username' => $username,
-            'email'    => $email,
-            'role'     => $role,
-            'fullname' => $_POST['fullname'] ?? null,
+        // Update
+        $db = Database::getInstance();
+        $sqlFields = 'username = :u, email = :e, role = :r, fullname = :f, avatar = :a';
+        $params    = [
+            'u' => $username,
+            'e' => $email,
+            'r' => $role,
+            'f' => $fullname,
+            'a' => $avatarPath,
+            'i' => $id,
         ];
-        if ($password !== '') {
-            $data['password'] = $password; // le modèle hachera
+        if ($updatePwd) {
+            $sqlFields .= ', password_hash = :p';
+            $params['p'] = password_hash($password, PASSWORD_DEFAULT);
         }
-        if ($avatarPath !== null) {
-            $data['avatar'] = $avatarPath;
-        }
+        $stmt = $db->prepare("UPDATE users SET {$sqlFields} WHERE id = :i");
+        $stmt->execute($params);
 
-        User::update($id, $data);
         $_SESSION['success'] = 'Utilisateur mis à jour.';
         header('Location: /admin/users');
         exit;
     }
 
-    // 6) Suppression
+    /**
+     * POST /admin/users/delete/{id}
+     * Supprime un utilisateur
+     */
     public function delete(int $id): void
     {
-        User::delete($id);
+        Database::getInstance()
+            ->prepare('DELETE FROM users WHERE id = ?')
+            ->execute([$id]);
+
         $_SESSION['success'] = 'Utilisateur supprimé.';
         header('Location: /admin/users');
         exit;
