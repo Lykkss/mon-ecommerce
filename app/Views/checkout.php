@@ -1,3 +1,36 @@
+<?php
+/**
+ * checkout.php
+ *
+ * Affiché depuis layout.php quand $checkout = true.
+ */
+if (empty($_SESSION['user_id'])) {
+    header('Location: /login');
+    exit;
+}
+
+// Reconstruction du panier
+$items   = [];
+$total   = 0.0;
+foreach ($_SESSION['cart'] ?? [] as $id => $qty) {
+    if ($p = App\Models\Product::find((int)$id)) {
+        $sub    = $qty * (float)$p['price'];
+        $items[] = [
+            'product'  => $p,
+            'quantity' => $qty,
+            'subtotal' => $sub,
+        ];
+        $total  += $sub;
+    }
+}
+
+// Récupération du solde pour l’affichage
+$user    = App\Models\User::findById((int)$_SESSION['user_id']);
+$balance = $user['balance'] ?? 0.0;
+?>
+
+<h2 class="text-2xl font-bold mb-4">Validation de la commande</h2>
+
 <?php if (!empty($_SESSION['errors'])): ?>
   <ul class="mb-4 text-red-600">
     <?php foreach ($_SESSION['errors'] as $e): ?>
@@ -6,6 +39,7 @@
   </ul>
 <?php endif; ?>
 
+<!-- Récapitulatif du panier -->
 <div class="bg-white rounded shadow mb-6 overflow-x-auto">
   <table class="w-full">
     <thead class="bg-gray-100">
@@ -27,51 +61,73 @@
         <td colspan="2" class="p-2 text-right font-bold">Total :</td>
         <td class="p-2 text-right font-bold"><?= number_format($total, 2, ',', ' ') ?> €</td>
       </tr>
+      <tr>
+        <td colspan="3" class="p-2 text-right text-sm text-gray-600">
+          Votre solde : <strong><?= number_format($balance, 2, ',', ' ') ?> €</strong>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
 
-<form action="/commande/valider" method="post" class="bg-white p-6 rounded shadow space-y-4">
+<!-- Formulaire de validation -->
+<form action="/commande/valider"
+      method="post"
+      class="bg-white p-6 rounded shadow space-y-4">
+
   <!-- Adresse de livraison -->
   <label class="block">
     Adresse de livraison
-    <input type="text" name="address" required class="w-full border rounded p-2"
-           value="<?= htmlspecialchars($_POST['address'] ?? '', ENT_QUOTES) ?>">
+    <input type="text" name="address" required
+           value="<?= htmlspecialchars($_POST['address'] ?? '', ENT_QUOTES) ?>"
+           class="w-full border rounded p-2">
   </label>
 
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <label class="block">
       Ville
-      <input type="text" name="city" required class="w-full border rounded p-2"
-             value="<?= htmlspecialchars($_POST['city'] ?? '', ENT_QUOTES) ?>">
+      <input type="text" name="city" required
+             value="<?= htmlspecialchars($_POST['city'] ?? '', ENT_QUOTES) ?>"
+             class="w-full border rounded p-2">
     </label>
     <label class="block">
       Code postal
-      <input type="text" name="zip" required class="w-full border rounded p-2"
-             value="<?= htmlspecialchars($_POST['zip'] ?? '', ENT_QUOTES) ?>">
+      <input type="text" name="zip" required
+             value="<?= htmlspecialchars($_POST['zip'] ?? '', ENT_QUOTES) ?>"
+             class="w-full border rounded p-2">
     </label>
   </div>
 
   <label class="block">
     Email
-    <input type="email" name="email" required class="w-full border rounded p-2"
-           value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES) ?>">
+    <input type="email" name="email" required
+           value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES) ?>"
+           class="w-full border rounded p-2">
   </label>
 
   <label class="block">
     Téléphone
-    <input type="tel" name="phone" required class="w-full border rounded p-2"
-           value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES) ?>">
+    <input type="tel" name="phone" required
+           value="<?= htmlspecialchars($_POST['phone'] ?? '', ENT_QUOTES) ?>"
+           class="w-full border rounded p-2">
   </label>
 
-  <!-- Méthode de paiement : radio buttons -->
+  <!-- Méthode de paiement -->
   <fieldset class="border rounded p-4">
     <legend class="font-medium mb-2">Méthode de paiement</legend>
+
     <label class="inline-flex items-center space-x-2">
-      <input type="radio" name="payment_method" value="credit_card" required
+      <input type="radio" name="payment_method" value="balance" required
+             <?= (($_POST['payment_method'] ?? '') === 'balance') ? 'checked' : '' ?>>
+      <span>Payer avec mon solde (<?= number_format($balance, 2, ',', ' ') ?> €)</span>
+    </label>
+
+    <label class="inline-flex items-center space-x-2 ml-6">
+      <input type="radio" name="payment_method" value="credit_card"
              <?= (($_POST['payment_method'] ?? '') === 'credit_card') ? 'checked' : '' ?>>
       <span>Carte de crédit</span>
     </label>
+
     <label class="inline-flex items-center space-x-2 ml-6">
       <input type="radio" name="payment_method" value="paypal"
              <?= (($_POST['payment_method'] ?? '') === 'paypal') ? 'checked' : '' ?>>
@@ -79,18 +135,21 @@
     </label>
   </fieldset>
 
-  <!-- Champs Carte de crédit (radio = credit_card) -->
-  <div id="cc-fields" class="<?= (($_POST['payment_method'] ?? '') === 'credit_card') ? '' : 'hidden' ?>">
+  <!-- Champs Carte de crédit -->
+  <div id="cc-fields"
+       class="<?= (($_POST['payment_method'] ?? '') === 'credit_card') ? '' : 'hidden' ?>">
     <label class="block">
       Numéro de carte
-      <input type="text" name="cc_number" pattern="[0-9]{13,19}" placeholder="0000 0000 0000 0000"
+      <input type="text" name="cc_number" pattern="\d{13,19}"
+             placeholder="0000 0000 0000 0000"
              class="w-full border rounded p-2"
              value="<?= htmlspecialchars($_POST['cc_number'] ?? '', ENT_QUOTES) ?>">
     </label>
     <div class="grid grid-cols-2 gap-4">
       <label class="block">
         Expiration (MM/AA)
-        <input type="text" name="cc_expiry" pattern="(0[1-9]|1[0-2])\/\d{2}" placeholder="MM/AA"
+        <input type="text" name="cc_expiry" pattern="(0[1-9]|1[0-2])\/\d{2}"
+               placeholder="MM/AA"
                class="w-full border rounded p-2"
                value="<?= htmlspecialchars($_POST['cc_expiry'] ?? '', ENT_QUOTES) ?>">
       </label>
@@ -103,20 +162,25 @@
     </div>
   </div>
 
-  <!-- Champs PayPal (radio = paypal) -->
-  <div id="pp-fields" class="<?= (($_POST['payment_method'] ?? '') === 'paypal') ? '' : 'hidden' ?>">
+  <!-- Champs PayPal -->
+  <div id="pp-fields"
+       class="<?= (($_POST['payment_method'] ?? '') === 'paypal') ? '' : 'hidden' ?>">
     <label class="block">
       E-mail PayPal
-      <input type="email" name="pp_email" class="w-full border rounded p-2"
+      <input type="email" name="pp_email"
              placeholder="votre@paypal.com"
+             class="w-full border rounded p-2"
              value="<?= htmlspecialchars($_POST['pp_email'] ?? '', ENT_QUOTES) ?>">
     </label>
   </div>
 
+  <!-- Conditions générales -->
   <label class="block">
     <input type="checkbox" name="terms" required>
     J’accepte les 
-    <a href="/terms" class="text-blue-600 hover:underline">conditions générales de vente</a>.
+    <a href="/terms" class="text-blue-600 hover:underline">
+      conditions générales de vente
+    </a>.
   </label>
 
   <div class="flex space-x-2">
@@ -133,30 +197,12 @@
 </form>
 
 <script>
-  const pmRadios = document.querySelectorAll('input[name="payment_method"]');
-  const ccFields   = document.getElementById('cc-fields');
-  const ppFields   = document.getElementById('pp-fields');
-
   function togglePaymentFields() {
     const sel = document.querySelector('input[name="payment_method"]:checked')?.value;
-    if (sel === 'credit_card') {
-      ccFields.classList.remove('hidden');
-      ccFields.querySelectorAll('input').forEach(i => i.required = true);
-      ppFields.classList.add('hidden');
-      ppFields.querySelectorAll('input').forEach(i => i.required = false);
-    } else if (sel === 'paypal') {
-      ppFields.classList.remove('hidden');
-      ppFields.querySelectorAll('input').forEach(i => i.required = true);
-      ccFields.classList.add('hidden');
-      ccFields.querySelectorAll('input').forEach(i => i.required = false);
-    } else {
-      ccFields.classList.add('hidden');
-      ccFields.querySelectorAll('input').forEach(i => i.required = false);
-      ppFields.classList.add('hidden');
-      ppFields.querySelectorAll('input').forEach(i => i.required = false);
-    }
+    document.getElementById('cc-fields').classList.toggle('hidden', sel !== 'credit_card');
+    document.getElementById('pp-fields').classList.toggle('hidden', sel !== 'paypal');
   }
-
-  pmRadios.forEach(r => r.addEventListener('change', togglePaymentFields));
+  document.querySelectorAll('input[name="payment_method"]')
+          .forEach(r => r.addEventListener('change', togglePaymentFields));
   document.addEventListener('DOMContentLoaded', togglePaymentFields);
 </script>

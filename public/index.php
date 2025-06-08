@@ -35,6 +35,10 @@ $router->get ('/logout',          [AuthController::class, 'logout']);
 // --- Catalogue public ---
 $router->get ('/',                        [HomeController::class, 'index']);
 $router->get ('/produit/(?P<id>\d+)',     [HomeController::class, 'show']);
+// Commentaires & Favoris
+$router->post('/produit/(?P<id>\d+)/comment',  [HomeController::class, 'addComment']);
+$router->post('/produit/(?P<id>\d+)/favorite', [HomeController::class, 'toggleFavorite']);
+
 
 // --- Panier (protégé) ---
 $router->post('/panier/ajouter',          [CartController::class, 'add']);
@@ -49,6 +53,8 @@ $router->get('/terms', function() {$terms = true; require __DIR__ . '/../app/Vie
 // --- Mon compte & factures (protégé) ---
 $router->get ('/compte',                           [AccountController::class, 'index']);
 $router->post('/compte/mettre-a-jour',             [AccountController::class, 'update']);
+$router->post('/compte/deposer',                   [AccountController::class, 'depositSubmit']);
+$router->post('/compte/payer',                     [AccountController::class, 'payInvoice']);
 $router->get ('/compte/factures',                  [InvoiceController::class, 'index']);
 $router->get ('/compte/facture/(?P<id>\d+)',       [InvoiceController::class, 'show']);
 $router->get ('/compte/facture/(?P<id>\d+)/pdf',   [InvoiceController::class, 'pdf']);
@@ -72,9 +78,7 @@ $router->get('/admin',                  [DashboardController::class, 'index']);
 
 // Consultation du stock en back-office
 $router->get('/admin/stock',            [AdminStockController::class, 'index']);
-$router->post('/admin/stock/update', [AdminStockController::class, 'updateSubmit']);
-$router->post('/admin/stock/update', [AdminStockController::class, 'updateSubmit']);
-
+$router->post('/admin/stock/update',    [AdminStockController::class, 'updateSubmit']);
 
 // CRUD produits
 $router->get ('/admin/products',               [ProductController::class, 'index']);
@@ -86,12 +90,11 @@ $router->post('/admin/products/delete/(?P<id>\d+)', [ProductController::class, '
 
 // CRUD utilisateurs
 $router->get ('/admin/users',               [UserController::class, 'index']);
+$router->get ('/admin/users/create',        [UserController::class, 'createForm']);
+$router->post('/admin/users/create',        [UserController::class, 'createSubmit']);
 $router->get ('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editForm']);
 $router->post('/admin/users/edit/(?P<id>\d+)', [UserController::class, 'editSubmit']);
 $router->post('/admin/users/delete/(?P<id>\d+)', [UserController::class, 'delete']);
-$router->get('/admin/users/create', [UserController::class, 'createForm']);
-$router->post('/admin/users/create', [UserController::class, 'createSubmit']);
 
-
-// --- Dispatch final (affiche la page ou 404/403) ---
+// Dispatch final (affiche la page ou 404/403)
 $router->dispatch($_SERVER['REQUEST_URI'], $_SERVER['REQUEST_METHOD']);

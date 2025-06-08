@@ -10,7 +10,8 @@ class SellController
     public function createForm(): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location: /login'); exit;
+            header('Location: /login');
+            exit;
         }
         $sell = true;
         require __DIR__ . '/../Views/layout.php';
@@ -19,61 +20,95 @@ class SellController
     public function createSubmit(): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location: /login'); exit;
-        }
-        $title = trim($_POST['title'] ?? '');
-        $desc  = trim($_POST['description'] ?? '');
-        $price = (float)($_POST['price'] ?? 0);
-        $qty   = (int)($_POST['stock'] ?? 0);
-        $errors = [];
-        if (!$title) $errors[] = 'Titre requis';
-        if ($price <= 0) $errors[] = 'Prix invalide';
-        if ($qty < 0) $errors[] = 'Stock invalide';
-        if ($errors) {
-            $_SESSION['errors'] = $errors;
-            header('Location: /sell'); exit;
-        }
-        // Image upload
-        $imgPath = null;
-        if (!empty($_FILES['image']['tmp_name'])) {
-            $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $imgDir = __DIR__ . '/../../public/assets/products/';
-            if (!is_dir($imgDir)) mkdir($imgDir, 0755, true);
-            $filename = 'prod_' . time() . '.' . $ext;
-            move_uploaded_file($_FILES['image']['tmp_name'], $imgDir . $filename);
-            $imgPath = 'assets/products/' . $filename;
+            header('Location: /login');
+            exit;
         }
 
+        // Récupération et validation des champs
+        $name        = trim($_POST['title'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $price       = (float)($_POST['price'] ?? 0);
+        $qty         = (int)($_POST['stock'] ?? 0);
+        $errors      = [];
+
+        if ($name === '') {
+            $errors[] = 'Titre requis.';
+        }
+        if ($price <= 0) {
+            $errors[] = 'Prix invalide.';
+        }
+        if ($qty < 0) {
+            $errors[] = 'Stock invalide.';
+        }
+
+        // Traitement de l'image
+        $imgPath = null;
+        if (!empty($_FILES['image']['tmp_name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['image'];
+            if ($file['size'] > 2_000_000) {
+                $errors[] = 'L’image ne doit pas dépasser 2 Mo.';
+            }
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime  = $finfo->file($file['tmp_name']);
+            if (!in_array($mime, ['image/jpeg','image/png'], true)) {
+                $errors[] = 'Format d’image invalide (jpeg ou png).';
+            }
+            if (empty($errors)) {
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $dir = __DIR__ . '/../../public/assets/products/';
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $filename = 'prod_' . time() . '_' . uniqid() . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+                    $imgPath = 'assets/products/' . $filename;
+                } else {
+                    $errors[] = 'Impossible de sauvegarder l’image.';
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            header('Location: /sell');
+            exit;
+        }
+
+        // Insertion du produit
         $db = Database::getInstance();
-        // Insertion produit
         $stmt = $db->prepare(
-            "INSERT INTO products (title, description, price, image, author_id) " .
-            "VALUES (:t, :d, :p, :i, :u)"
+            'INSERT INTO products (name, description, price, image, author_id)
+             VALUES (:n, :d, :p, :i, :u)'
         );
         $stmt->execute([
-            't' => $title,
-            'd' => $desc,
+            'n' => $name,
+            'd' => $description,
             'p' => $price,
             'i' => $imgPath,
             'u' => $_SESSION['user_id'],
         ]);
         $prodId = (int)$db->lastInsertId();
 
-        // Insertion stock
-        $stmt2 = $db->prepare("INSERT INTO stock (article_id, quantity) VALUES (?, ?)");
-        $stmt2->execute([$prodId, $qty]);
+        // Insertion du stock
+        $stmt2 = $db->prepare('INSERT INTO stock (article_id, quantity) VALUES (:a, :q)');
+        $stmt2->execute([
+            'a' => $prodId,
+            'q' => $qty,
+        ]);
 
-        header('Location: /'); exit;
+        $_SESSION['success'] = 'Produit publié avec succès.';
+        header('Location: /compte');
+        exit;
     }
 
     public function editForm(int $id): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location: /login'); exit;
+            header('Location: /login');
+            exit;
         }
         $prod = Product::find($id);
-        if (!$prod || $prod['author_id'] != $_SESSION['user_id']) {
-            header('Location: /'); exit;
+        if (!$prod || $prod['author_id'] !== $_SESSION['user_id']) {
+            header('Location: /');
+            exit;
         }
         $stock = Stock::findByArticle($id)['quantity'] ?? 0;
         $edit  = true;
@@ -83,45 +118,111 @@ class SellController
     public function editSubmit(int $id): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location: /login'); exit;
+            header('Location: /login');
+            exit;
         }
         $prod = Product::find($id);
-        if (!$prod || $prod['author_id'] != $_SESSION['user_id']) {
-            header('Location: /'); exit;
+        if (!$prod || $prod['author_id'] !== $_SESSION['user_id']) {
+            header('Location: /');
+            exit;
         }
-        $title = trim($_POST['title'] ?? '');
-        $desc  = trim($_POST['description'] ?? '');
-        $price = (float)($_POST['price'] ?? 0);
-        $qty   = (int)($_POST['stock'] ?? 0);
 
+        // Récupération et validation
+        $name        = trim($_POST['title'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $price       = (float)($_POST['price'] ?? 0);
+        $qty         = (int)($_POST['stock'] ?? 0);
+        $errors      = [];
+        if ($name === '') {
+            $errors[] = 'Titre requis.';
+        }
+        if ($price <= 0) {
+            $errors[] = 'Prix invalide.';
+        }
+        if ($qty < 0) {
+            $errors[] = 'Stock invalide.';
+        }
+
+        // Gestion de la nouvelle image
+        $imgPath = null;
+        if (!empty($_FILES['image']['tmp_name']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['image'];
+            if ($file['size'] > 2_000_000) {
+                $errors[] = 'L’image ne doit pas dépasser 2 Mo.';
+            }
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime  = $finfo->file($file['tmp_name']);
+            if (!in_array($mime, ['image/jpeg','image/png'], true)) {
+                $errors[] = 'Format d’image invalide (jpeg ou png).';
+            }
+            if (empty($errors)) {
+                if (!empty($prod['image']) && file_exists(__DIR__ . '/../../public/' . $prod['image'])) {
+                    @unlink(__DIR__ . '/../../public/' . $prod['image']);
+                }
+                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                $dir = __DIR__ . '/../../public/assets/products/';
+                if (!is_dir($dir)) mkdir($dir, 0755, true);
+                $filename = 'prod_' . time() . '_' . uniqid() . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $dir . $filename)) {
+                    $imgPath = 'assets/products/' . $filename;
+                } else {
+                    $errors[] = 'Impossible de sauvegarder l’image.';
+                }
+            }
+        }
+
+        if (!empty($errors)) {
+            $_SESSION['errors'] = $errors;
+            header('Location: /edit/' . $id);
+            exit;
+        }
+
+        // Construction de la requête de mise à jour
+        $fields = ['name = :n', 'description = :d', 'price = :p'];
+        $params = [
+            'n'  => $name,
+            'd'  => $description,
+            'p'  => $price,
+            'id' => $id,
+        ];
+        if ($imgPath !== null) {
+            $fields[] = 'image = :i';
+            $params['i'] = $imgPath;
+        }
+        $sql = 'UPDATE products SET ' . implode(', ', $fields) . ' WHERE id = :id';
         $db = Database::getInstance();
-        // Update produit
-        $stmt = $db->prepare(
-            "UPDATE products SET title=:t, description=:d, price=:p" .
-            " WHERE id=:id"
-        );
-        $stmt->execute(['t' => $title, 'd' => $desc, 'p' => $price, 'id' => $id]);
-        // Update stock
-        $stmt2 = $db->prepare(
-            "UPDATE stock SET quantity=? WHERE article_id=?"
-        );
-        $stmt2->execute([$qty, $id]);
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
 
-        header('Location: /compte' . $id); exit;
+        // Mise à jour du stock
+        $stmt2 = $db->prepare('UPDATE stock SET quantity = :q WHERE article_id = :a');
+        $stmt2->execute([
+            'q' => $qty,
+            'a' => $id,
+        ]);
+
+        $_SESSION['success'] = 'Produit mis à jour avec succès.';
+        header('Location: /compte');
+        exit;
     }
 
     public function delete(int $id): void
     {
         if (empty($_SESSION['user_id'])) {
-            header('Location: /login'); exit;
+            header('Location: /login');
+            exit;
         }
         $prod = Product::find($id);
-        if (!$prod || $prod['author_id'] != $_SESSION['user_id']) {
-            header('Location: /'); exit;
+        if (!$prod || $prod['author_id'] !== $_SESSION['user_id']) {
+            header('Location: /');
+            exit;
         }
         $db = Database::getInstance();
-        $db->prepare("DELETE FROM products WHERE id = ?")->execute([$id]);
+        $db->prepare('DELETE FROM stock WHERE article_id = ?')->execute([$id]);
+        $db->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
 
-        header('Location: /'); exit;
+        $_SESSION['success'] = 'Produit supprimé.';
+        header('Location: /compte');
+        exit;
     }
 }

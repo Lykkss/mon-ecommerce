@@ -65,10 +65,10 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
           include __DIR__ . '/login.php';
           return;
 
-      // 2) Checkout (page /commande) — on vérifie d’abord ce drapeau
-    elseif (!empty($checkout)):
-      include __DIR__ . '/checkout.php';
-      return;
+      // 2) Checkout (page /commande)
+      elseif (!empty($checkout)):
+          include __DIR__ . '/checkout.php';
+          return;
 
       // 3) Page de succès de commande
       elseif (!empty($orderSuccess)):
@@ -130,12 +130,18 @@ if (!$avatarSrc && $currentUser && file_exists(__DIR__ . '/../../public' . $fall
       elseif (isset($invoice) && isset($items)):
           include __DIR__ . '/invoice_detail.php';
           return;
-          
-      elseif (!empty($terms)):
-            include __DIR__ . '/terms.php';
-            return;
 
-      // 14) Page d’accueil par défaut
+      // 14) Public – Vendre / Éditer un produit
+      elseif (!empty($sell) || !empty($edit)):
+          include __DIR__ . '/sell.php';
+          return;
+
+      // 15) Terms
+      elseif (!empty($terms)):
+          include __DIR__ . '/terms.php';
+          return;
+
+      // 16) Page d’accueil par défaut
       else:
           include __DIR__ . '/home.php';
           return;

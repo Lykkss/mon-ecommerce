@@ -7,6 +7,9 @@ use App\Core\Database;
 
 class AccountController
 {
+    /**
+     * GET /compte
+     */
     public function index(): void
     {
         if (empty($_SESSION['user_id'])) {
@@ -18,11 +21,11 @@ class AccountController
         $user     = User::findById($userId);
         $invoices = Invoice::findByUser($userId);
 
-        // === NOUVEAU : on récupère aussi les produits “à vendre” de ce user ===
-        $db = Database::getInstance();
+        // Produits à vendre par cet utilisateur
+        $db   = Database::getInstance();
         $stmt = $db->prepare(
             "SELECT p.id,
-                    p.name AS title,
+                    p.name  AS title,
                     p.price,
                     p.image,
                     COALESCE(s.quantity, 0) AS stock
@@ -34,7 +37,10 @@ class AccountController
         $stmt->execute(['uid' => $userId]);
         $myProducts = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Si on vient de mettre à jour l’avatar, on peut avoir mis à jour $_SESSION['user_avatar'] + 'user_fullname'
+        // Solde
+        $balance = $user['balance'] ?? 0.0;
+
+        // Si on vient de changer avatar/fullname
         if (!empty($_SESSION['user_avatar'])) {
             $user['avatar']   = $_SESSION['user_avatar'];
         }
@@ -42,13 +48,18 @@ class AccountController
             $user['fullname'] = $_SESSION['user_fullname'];
         }
 
-        // Pour forcer le bust-cache dans la vue
+        // Cache-buster avatar
         $ts = $_SESSION['avatar_ts'] ?? null;
 
+        // Flag pour la vue
         $account = true;
         require __DIR__ . '/../Views/layout.php';
     }
 
+    /**
+     * POST /compte/mettre-a-jour
+     * Mise à jour du profil (fullname + avatar)
+     */
     public function update(): void
     {
         if (empty($_SESSION['user_id'])) {
@@ -63,17 +74,17 @@ class AccountController
         $avatar   = $_FILES['avatar'] ?? null;
         $errors   = [];
 
-        // 1) Validation du nom
+        // Validation du nom
         if ($fullname === '') {
             $errors[] = "Le nom complet ne peut pas être vide.";
         } elseif (mb_strlen($fullname) > 100) {
             $errors[] = "Le nom complet ne peut pas dépasser 100 caractères.";
         }
 
-        // 2) Valeur actuelle de l’avatar
+        // Chemin actuel de l’avatar
         $avatarPath = $user['avatar'] ?? null;
 
-        // 3) Traitement de l’upload
+        // Traitement de l’upload
         if ($avatar && $avatar['error'] === UPLOAD_ERR_OK) {
             if ($avatar['size'] > 2_000_000) {
                 $errors[] = "L’avatar ne doit pas dépasser 2 Mo.";
@@ -81,44 +92,40 @@ class AccountController
             $finfo = new \finfo(FILEINFO_MIME_TYPE);
             $mime  = $finfo->file($avatar['tmp_name']);
             if (!in_array($mime, ['image/jpeg','image/png'], true)) {
-                $errors[] = "Avatar : format invalide (jpeg ou png).";
+                $errors[] = "Format invalide : jpeg ou png attendu.";
             }
 
-            if (empty($errors)) {
+            if (!$errors) {
                 $dir = __DIR__ . '/../../public/assets/avatars/';
                 if (!is_dir($dir)) {
                     mkdir($dir, 0755, true);
                 }
-
-                // Supprime l’ancien avatar
+                // Supprime l’ancien
                 if (!empty($user['avatar']) && file_exists(__DIR__ . '/../../public/' . $user['avatar'])) {
                     @unlink(__DIR__ . '/../../public/' . $user['avatar']);
                 }
-
-                // Génère un nom de fichier unique + cache buster
+                // Nouveau nom + déplacement
                 $ext      = strtolower(pathinfo($avatar['name'], PATHINFO_EXTENSION));
-                $uniq     = uniqid('', true);
-                $filename = "avatar_{$userId}_{$uniq}.{$ext}";
+                $uniq     = uniqid("avatar_{$userId}_", true);
+                $filename = "{$uniq}.{$ext}";
                 $dest     = $dir . $filename;
-
                 if (!move_uploaded_file($avatar['tmp_name'], $dest)) {
                     $errors[] = "Impossible de sauvegarder l’avatar.";
                 } else {
                     $avatarPath             = 'assets/avatars/' . $filename;
                     $_SESSION['user_avatar'] = $avatarPath;
-                    // On stocke un timestamp pour bust-cache
-                    $_SESSION['avatar_ts']   = time();
+                    $_SESSION['avatar_ts']    = time();
                 }
             }
         }
 
-        if (!empty($errors)) {
+        if ($errors) {
             $_SESSION['errors'] = $errors;
             header('Location: /compte');
             exit;
         }
 
-        // 4) Mise à jour en base
+        // Mise à jour en base
         $db   = Database::getInstance();
         $stmt = $db->prepare("
             UPDATE users
@@ -132,9 +139,102 @@ class AccountController
             'id' => $userId,
         ]);
 
-        // 5) Message de succès + fullname en session
-        $_SESSION['success']        = "Profil mis à jour avec succès.";
-        $_SESSION['user_fullname']  = $fullname;
+        $_SESSION['success']       = "Profil mis à jour avec succès.";
+        $_SESSION['user_fullname'] = $fullname;
+
+        header('Location: /compte');
+        exit;
+    }
+
+    /**
+     * POST /compte/deposer
+     * Créditer le solde utilisateur
+     */
+    public function depositSubmit(): void
+    {
+        if (empty($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        $amount = (float)($_POST['amount'] ?? 0);
+        if ($amount <= 0) {
+            $_SESSION['errors'] = ['Montant invalide.'];
+            header('Location: /compte');
+            exit;
+        }
+
+        $db   = Database::getInstance();
+        $stmt = $db->prepare("
+            UPDATE users
+               SET balance = balance + :amt
+             WHERE id      = :uid
+        ");
+        $stmt->execute([
+            'amt' => $amount,
+            'uid' => $_SESSION['user_id'],
+        ]);
+
+        $_SESSION['success'] = "Votre solde a été crédité de " 
+            . number_format($amount, 2, ',', ' ') . " €.";
+
+        header('Location: /compte');
+        exit;
+    }
+
+    /**
+     * POST /compte/payer
+     * Débiter le solde pour payer une facture
+     */
+    public function payInvoice(): void
+    {
+        if (empty($_SESSION['user_id'])) {
+            header('Location: /login');
+            exit;
+        }
+
+        $invoiceId = (int)($_POST['invoice_id'] ?? 0);
+        // Récupération de la facture
+        $invoice = Invoice::findById($invoiceId);
+        if (!$invoice || $invoice['user_id'] !== $_SESSION['user_id']) {
+            $_SESSION['errors'] = ['Facture introuvable.'];
+            header('Location: /compte');
+            exit;
+        }
+        if (!empty($invoice['paid_at'])) {
+            $_SESSION['errors'] = ['Cette facture est déjà payée.'];
+            header('Location: /compte');
+            exit;
+        }
+
+        $amount = $invoice['total_amount'];
+        $user   = User::findById($_SESSION['user_id']);
+        if ($user['balance'] < $amount) {
+            $_SESSION['errors'] = ['Solde insuffisant.'];
+            header('Location: /compte');
+            exit;
+        }
+
+        // Transaction : débit et marquage payé
+        $db = Database::getInstance();
+        $db->beginTransaction();
+        $db->prepare("
+            UPDATE users
+               SET balance = balance - :amt
+             WHERE id      = :uid
+        ")->execute([
+            'amt' => $amount,
+            'uid' => $_SESSION['user_id'],
+        ]);
+        $db->prepare("
+            UPDATE invoices
+               SET paid_at = NOW()
+             WHERE id = :inv
+        ")->execute(['inv' => $invoiceId]);
+        $db->commit();
+
+        $_SESSION['success'] = "Facture #{$invoiceId} payée (−" 
+            . number_format($amount, 2, ',', ' ') . " €).";
 
         header('Location: /compte');
         exit;

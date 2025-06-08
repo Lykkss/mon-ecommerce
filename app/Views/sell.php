@@ -2,15 +2,27 @@
 /**
  * sell.php
  *
- * Ce template sert à la fois à :
- * - Publier un nouveau produit (GET /sell → $sell = true)
- * - Modifier un produit existant (GET /edit/{id} → $edit = true, $prod + $stock définis)
+ * Template pour publier ou modifier un produit
  */
 
-// On détecte si on est en mode édition
+// Détermine le mode (création vs édition)
 $isEdit = !empty($edit);
 
-// Détermine l’URL du formulaire et les textes en fonction du mode
+// Variables par défaut pour éviter les notices
+if (!$isEdit) {
+    $prod = [
+        'title'       => '',
+        'description' => '',
+        'price'       => '',
+        'image'       => null,
+    ];
+    $stock = 0;
+}
+
+// Cache-buster pour l'image
+$ts = time();
+
+// URL du formulaire et textes selon le mode
 $formAction = $isEdit
     ? '/edit/' . (int)$prod['id']
     : '/sell';
@@ -24,7 +36,7 @@ $btnText = $isEdit
     : 'Publier';
 ?>
 
-<h2 class="text-2xl font-bold mb-4"><?= $formTitle ?></h2>
+<h2 class="text-2xl font-bold mb-4"><?= htmlspecialchars($formTitle, ENT_QUOTES) ?></h2>
 
 <?php if (!empty($_SESSION['errors'])): ?>
   <ul class="text-red-600 mb-4">
@@ -34,7 +46,7 @@ $btnText = $isEdit
   </ul>
 <?php endif; ?>
 
-<form action="<?= $formAction ?>"
+<form action="<?= htmlspecialchars($formAction, ENT_QUOTES) ?>"
       method="post"
       enctype="multipart/form-data"
       class="space-y-4 bg-white p-6 rounded shadow">
@@ -45,7 +57,7 @@ $btnText = $isEdit
     <input type="text"
            name="title"
            required
-           value="<?= htmlspecialchars($prod['title'] ?? '', ENT_QUOTES) ?>"
+           value="<?= htmlspecialchars($prod['title'], ENT_QUOTES) ?>"
            class="w-full border rounded p-2">
   </label>
 
@@ -54,7 +66,7 @@ $btnText = $isEdit
     Description
     <textarea name="description"
               class="w-full border rounded p-2"
-              rows="4"><?= htmlspecialchars($prod['description'] ?? '', ENT_QUOTES) ?></textarea>
+              rows="4"><?= htmlspecialchars($prod['description'], ENT_QUOTES) ?></textarea>
   </label>
 
   <!-- Prix -->
@@ -64,7 +76,7 @@ $btnText = $isEdit
            step="0.01"
            name="price"
            required
-           value="<?= htmlspecialchars($prod['price'] ?? '', ENT_QUOTES) ?>"
+           value="<?= htmlspecialchars($prod['price'], ENT_QUOTES) ?>"
            class="w-full border rounded p-2">
   </label>
 
@@ -75,7 +87,7 @@ $btnText = $isEdit
            name="stock"
            required
            min="0"
-           value="<?= htmlspecialchars($stock ?? '', ENT_QUOTES) ?>"
+           value="<?= htmlspecialchars($stock, ENT_QUOTES) ?>"
            class="w-full border rounded p-2">
   </label>
 
@@ -85,13 +97,15 @@ $btnText = $isEdit
     <input type="file"
            name="image"
            accept="image/jpeg,image/png"
+           id="image-input"
            class="w-full border rounded p-2">
   </label>
 
   <?php if ($isEdit && !empty($prod['image'])): ?>
     <div>
       <span class="text-sm text-gray-600">Image actuelle :</span>
-      <img src="/<?= htmlspecialchars($prod['image'], ENT_QUOTES) ?>"
+      <img id="image-preview"
+           src="/<?= htmlspecialchars($prod['image'], ENT_QUOTES) ?>?t=<?= $ts ?>"
            alt="Aperçu"
            class="h-24 w-24 object-cover rounded mt-2">
     </div>
@@ -99,6 +113,19 @@ $btnText = $isEdit
 
   <button type="submit"
           class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
-    <?= $btnText ?>
+    <?= htmlspecialchars($btnText, ENT_QUOTES) ?>
   </button>
 </form>
+
+<script>
+  const imgInput = document.getElementById('image-input');
+  const imgPreview = document.getElementById('image-preview');
+  if (imgInput && imgPreview) {
+    imgInput.addEventListener('change', () => {
+      const file = imgInput.files[0];
+      if (file) {
+        imgPreview.src = URL.createObjectURL(file);
+      }
+    });
+  }
+</script>

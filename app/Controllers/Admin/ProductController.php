@@ -9,13 +9,33 @@ use App\Models\Stock;
 
 class ProductController
 {
+    /**
+     * GET /admin/products
+     * Affiche la liste des produits avec stock, nb commentaires et nb favoris
+     */
     public function index(): void
     {
         $db = Database::getInstance();
         $products = $db->query(
-            'SELECT p.id, p.name, p.description, p.price, p.image, COALESCE(s.quantity,0) AS stock
+            'SELECT 
+                p.id,
+                p.name,
+                p.description,
+                p.price,
+                p.image,
+                COALESCE(s.quantity,0) AS stock,
+                COALESCE(c.comments_count,0) AS comments_count,
+                COALESCE(f.favorites_count,0) AS favorites_count
              FROM products p
              LEFT JOIN stock s ON s.article_id = p.id
+             LEFT JOIN (
+                 SELECT product_id, COUNT(*) AS comments_count
+                 FROM comments GROUP BY product_id
+             ) c ON c.product_id = p.id
+             LEFT JOIN (
+                 SELECT product_id, COUNT(*) AS favorites_count
+                 FROM favorites GROUP BY product_id
+             ) f ON f.product_id = p.id
              ORDER BY p.created_at DESC'
         )->fetchAll(\PDO::FETCH_ASSOC);
 
@@ -23,6 +43,9 @@ class ProductController
         require __DIR__ . '/../../Views/layout.php';
     }
 
+    /**
+     * GET /admin/products/create
+     */
     public function createForm(): void
     {
         $adminProductsCreate = true;
@@ -30,9 +53,12 @@ class ProductController
         require __DIR__ . '/../../Views/layout.php';
     }
 
+    /**
+     * POST /admin/products/create
+     */
     public function createSubmit(): void
     {
-        // 1) Validation
+        // Validation
         $name  = trim($_POST['name'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
@@ -43,29 +69,22 @@ class ProductController
         if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
         if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
 
-        // 2) Upload image
+        // Upload image
         $imagePath = '';
-        if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+        if (!empty($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
             if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-                if ($_FILES['image']['error'] === UPLOAD_ERR_INI_SIZE) {
-                    $errors[] = 'Le fichier est trop volumineux (max '.ini_get('upload_max_filesize').').';
-                } else {
-                    $errors[] = 'Erreur upload n°'.$_FILES['image']['error'];
-                }
+                $errors[] = 'Erreur lors de l’upload de l’image.';
             } else {
                 $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
                 if (!in_array($ext, ['jpg','jpeg','png'], true)) {
                     $errors[] = 'Format image invalide (jpg/jpeg/png).';
                 } else {
-                    // chemin absolu vers public/assets/products
                     $dir = __DIR__ . '/../../../public/assets/products/';
                     if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-                        $errors[] = 'Impossible de créer le dossier de destination.';
+                        $errors[] = 'Impossible de créer le dossier products.';
                     }
                     $filename = 'prod_' . time() . '.' . $ext;
-                    $dest     = $dir . $filename;
-
-                    if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
+                    if (!move_uploaded_file($_FILES['image']['tmp_name'], $dir . $filename)) {
                         $errors[] = "Échec de l'upload de l'image.";
                     } else {
                         $imagePath = 'assets/products/' . $filename;
@@ -74,24 +93,22 @@ class ProductController
             }
         }
 
-        // 3) Si erreurs, on renvoie
         if ($errors) {
             $_SESSION['errors'] = $errors;
             header('Location: /admin/products/create');
             exit;
         }
 
-        // 4) Création en base
-        $userId = $_SESSION['user_id'] ?? 1;
+        // Création produit
         $productId = Product::create([
             'name'        => $name,
             'description' => $desc,
             'price'       => $price,
             'image'       => $imagePath,
-            'author_id'   => $userId,
+            // author_id géré par le modèle ou ajouté ici si besoin
         ]);
 
-        // 5) Stock initial
+        // Stock initial
         Database::getInstance()
             ->prepare('INSERT INTO stock (article_id, quantity) VALUES (?, ?)')
             ->execute([$productId, $stock]);
@@ -101,6 +118,9 @@ class ProductController
         exit;
     }
 
+    /**
+     * GET /admin/products/edit/{id}
+     */
     public function editForm(int $id): void
     {
         $product = Product::find($id);
@@ -109,7 +129,6 @@ class ProductController
             header('Location: /admin/products');
             exit;
         }
-
         $stockData = Stock::findByArticle($id);
         $product['stock'] = $stockData['quantity'] ?? 0;
 
@@ -117,6 +136,9 @@ class ProductController
         require __DIR__ . '/../../Views/layout.php';
     }
 
+    /**
+     * POST /admin/products/edit/{id}
+     */
     public function editSubmit(int $id): void
     {
         $product = Product::find($id);
@@ -136,14 +158,11 @@ class ProductController
         if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
         if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
 
+        // Gestion de l'image
         $imagePath = $product['image'] ?? '';
-        if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+        if (!empty($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
             if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-                if ($_FILES['image']['error'] === UPLOAD_ERR_INI_SIZE) {
-                    $errors[] = 'Le fichier est trop volumineux (max '.ini_get('upload_max_filesize').').';
-                } else {
-                    $errors[] = 'Erreur upload n°'.$_FILES['image']['error'];
-                }
+                $errors[] = 'Erreur lors de l’upload de l’image.';
             } else {
                 $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
                 if (!in_array($ext, ['jpg','jpeg','png'], true)) {
@@ -151,12 +170,10 @@ class ProductController
                 } else {
                     $dir = __DIR__ . '/../../../public/assets/products/';
                     if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
-                        $errors[] = 'Impossible de créer le dossier de destination.';
+                        $errors[] = 'Impossible de créer le dossier products.';
                     }
-                    $filename = 'prod_' . $id . '_' . time() . '.' . $ext;
-                    $dest     = $dir . $filename;
-
-                    if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
+                    $filename = "prod_{$id}_" . time() . ".{$ext}";
+                    if (!move_uploaded_file($_FILES['image']['tmp_name'], $dir . $filename)) {
                         $errors[] = "Échec de l'upload de l'image.";
                     } else {
                         $imagePath = 'assets/products/' . $filename;
@@ -171,6 +188,7 @@ class ProductController
             exit;
         }
 
+        // Mise à jour produit
         Product::update($id, [
             'name'        => $name,
             'description' => $desc,
@@ -178,17 +196,25 @@ class ProductController
             'image'       => $imagePath,
         ]);
 
+        // Mise à jour du stock
         Stock::updateQuantity($id, $stock);
+
         $_SESSION['success'] = 'Produit mis à jour.';
         header('Location: /admin/products');
         exit;
     }
 
+    /**
+     * POST /admin/products/delete/{id}
+     */
     public function delete(int $id): void
     {
+        // Suppression du stock en amont
         Database::getInstance()
             ->prepare('DELETE FROM stock WHERE article_id = ?')
             ->execute([$id]);
+
+        // Suppression du produit
         Product::delete($id);
 
         $_SESSION['success'] = 'Produit supprimé.';
