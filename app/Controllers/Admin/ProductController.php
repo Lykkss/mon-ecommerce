@@ -1,4 +1,6 @@
 <?php
+// app/Controllers/Admin/ProductController.php
+
 namespace App\Controllers\Admin;
 
 use App\Core\Database;
@@ -24,70 +26,61 @@ class ProductController
     public function createForm(): void
     {
         $adminProductsCreate = true;
+        $product = ['name' => '', 'description' => '', 'price' => '', 'image' => '', 'stock' => 0];
         require __DIR__ . '/../../Views/layout.php';
     }
 
     public function createSubmit(): void
     {
-    
-        // 1) Validation des champs textes / numériques
+        // 1) Validation
         $name  = trim($_POST['name'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
         $stock = (int)($_POST['stock'] ?? 0);
-    
+
         $errors = [];
         if ($name === '')   $errors[] = 'Le nom est requis.';
         if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
         if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
-    
+
         // 2) Upload image
-        // → on initialise toujours la variable comme chaîne (pas NULL)
         $imagePath = '';
-    
-        // Vérifier qu’un fichier a été soumis
         if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
-            // Erreur PHP ? (taille, etc.)
             if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
-                $errors[] = 'Erreur upload n°'.$_FILES['image']['error'];
+                if ($_FILES['image']['error'] === UPLOAD_ERR_INI_SIZE) {
+                    $errors[] = 'Le fichier est trop volumineux (max '.ini_get('upload_max_filesize').').';
+                } else {
+                    $errors[] = 'Erreur upload n°'.$_FILES['image']['error'];
+                }
             } else {
-                // Extension autorisée ?
                 $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
                 if (!in_array($ext, ['jpg','jpeg','png'], true)) {
                     $errors[] = 'Format image invalide (jpg/jpeg/png).';
                 } else {
-                    // Création du dossier s’il n’existe pas
-                    $dir = __DIR__ . '/../../public/assets/products/';
-                    if (!is_dir($dir)) {
-                        if (!mkdir($dir, 0755, true)) {
-                            $errors[] = 'Impossible de créer le dossier de destination.';
-                        }
+                    // chemin absolu vers public/assets/products
+                    $dir = __DIR__ . '/../../../public/assets/products/';
+                    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+                        $errors[] = 'Impossible de créer le dossier de destination.';
                     }
-    
-                    // Déplacement du fichier
                     $filename = 'prod_' . time() . '.' . $ext;
                     $dest     = $dir . $filename;
+
                     if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
-                        $errors[] = "Échec de l'upload de l'image vers $dest.";
-                        error_log("move_uploaded_file failed: $dest");
+                        $errors[] = "Échec de l'upload de l'image.";
                     } else {
-                        // chemin relatif à stocker en base
                         $imagePath = 'assets/products/' . $filename;
                     }
                 }
             }
-        } else {
-            // Si vous souhaitez rendre l’image obligatoire, décommentez :
-            // $errors[] = 'L’image est requise.';
         }
-    
-        // 3) Si erreurs, on stocke et on redirige
+
+        // 3) Si erreurs, on renvoie
         if ($errors) {
             $_SESSION['errors'] = $errors;
             header('Location: /admin/products/create');
             exit;
         }
-    
+
         // 4) Création en base
         $userId = $_SESSION['user_id'] ?? 1;
         $productId = Product::create([
@@ -97,17 +90,17 @@ class ProductController
             'image'       => $imagePath,
             'author_id'   => $userId,
         ]);
-    
+
         // 5) Stock initial
         Database::getInstance()
             ->prepare('INSERT INTO stock (article_id, quantity) VALUES (?, ?)')
             ->execute([$productId, $stock]);
-    
+
         $_SESSION['success'] = 'Produit créé avec succès.';
         header('Location: /admin/products');
         exit;
     }
-    
+
     public function editForm(int $id): void
     {
         $product = Product::find($id);
@@ -118,7 +111,7 @@ class ProductController
         }
 
         $stockData = Stock::findByArticle($id);
-        $stock     = $stockData['quantity'] ?? 0;
+        $product['stock'] = $stockData['quantity'] ?? 0;
 
         $adminProductsEdit = true;
         require __DIR__ . '/../../Views/layout.php';
@@ -133,7 +126,6 @@ class ProductController
             exit;
         }
 
-        // 1) Validation
         $name  = trim($_POST['name'] ?? '');
         $desc  = trim($_POST['description'] ?? '');
         $price = (float)($_POST['price'] ?? 0);
@@ -144,22 +136,31 @@ class ProductController
         if ($price <= 0)    $errors[] = 'Le prix doit être positif.';
         if ($stock < 0)     $errors[] = 'Le stock doit être ≥ 0.';
 
-        // 2) Upload éventuel
-        $imagePath = $product['image'];
-        if (!empty($_FILES['image']['tmp_name'])) {
-            $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-            if (!in_array($ext, ['jpg','jpeg','png'], true)) {
-                $errors[] = 'Format image invalide (jpg/jpeg/png).';
-            } else {
-                $dir      = __DIR__ . '/../../public/assets/products/';
-                if (!is_dir($dir)) mkdir($dir, 0755, true);
-                $filename = 'prod_' . $id . '_' . time() . '.' . $ext;
-                $dest     = $dir . $filename;
-
-                if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
-                    $errors[] = "Échec de l'upload de l'image.";
+        $imagePath = $product['image'] ?? '';
+        if (isset($_FILES['image']) && is_uploaded_file($_FILES['image']['tmp_name'])) {
+            if ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+                if ($_FILES['image']['error'] === UPLOAD_ERR_INI_SIZE) {
+                    $errors[] = 'Le fichier est trop volumineux (max '.ini_get('upload_max_filesize').').';
                 } else {
-                    $imagePath = 'assets/products/' . $filename;
+                    $errors[] = 'Erreur upload n°'.$_FILES['image']['error'];
+                }
+            } else {
+                $ext = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg','jpeg','png'], true)) {
+                    $errors[] = 'Format image invalide (jpg/jpeg/png).';
+                } else {
+                    $dir = __DIR__ . '/../../../public/assets/products/';
+                    if (!is_dir($dir) && !mkdir($dir, 0755, true)) {
+                        $errors[] = 'Impossible de créer le dossier de destination.';
+                    }
+                    $filename = 'prod_' . $id . '_' . time() . '.' . $ext;
+                    $dest     = $dir . $filename;
+
+                    if (!move_uploaded_file($_FILES['image']['tmp_name'], $dest)) {
+                        $errors[] = "Échec de l'upload de l'image.";
+                    } else {
+                        $imagePath = 'assets/products/' . $filename;
+                    }
                 }
             }
         }
@@ -170,7 +171,6 @@ class ProductController
             exit;
         }
 
-        // 3) Update produit
         Product::update($id, [
             'name'        => $name,
             'description' => $desc,
@@ -178,9 +178,7 @@ class ProductController
             'image'       => $imagePath,
         ]);
 
-        // 4) Update stock
         Stock::updateQuantity($id, $stock);
-
         $_SESSION['success'] = 'Produit mis à jour.';
         header('Location: /admin/products');
         exit;
