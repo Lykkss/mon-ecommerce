@@ -88,7 +88,7 @@ Swagger UI : http://localhost:8081/
 
 MailHog Web UI : http://localhost:8025/
 
-SonarQube : http://localhost:9000/ (admin/admin par défaut)
+SonarQube : http://localhost:9000/ (admin/P@ssw0rd123! par défaut)
 
 ## 🔧 Configuration MySQL et création de la base
 
@@ -197,7 +197,7 @@ docker-compose up -d db_sonar sonarqube
 
 2. **Créer un jeton (token)**
 
-Connectez-vous à l’UI SonarQube (admin / admin).
+Connectez-vous à l’UI SonarQube (admin / P@ssw0rd123!).
 
 Dans votre espace utilisateur → “Security” → “Generate Tokens”.
 
@@ -209,7 +209,7 @@ sonar.projectKey=mon-ecommerce
 sonar.projectName=Mon E-Commerce PHP
 sonar.sources=app,public
 sonar.host.url=http://localhost:9000
-sonar.login=<VOTRE_TOKEN_SONAR>
+sonar.login=<TOKEN_SONAR>
 
 4. **Lancer l'analyse**
 
@@ -219,7 +219,7 @@ sonar-scanner \
   -Dsonar.projectKey=mon-ecommerce \
   -Dsonar.sources=. \
   -Dsonar.host.url=http://localhost:9000 \
-  -Dsonar.login=<VOTRE_TOKEN_SONAR>
+  -Dsonar.login=<TOKEN_SONAR>
 
 → Une fois terminé, les métriques et issues s’affichent dans l’interface SonarQube.
 
