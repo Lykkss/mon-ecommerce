@@ -29,29 +29,6 @@ class User
     }
 
     /**
-     * Crée un nouvel utilisateur
-     *
-     * Attente : $data['password'] est déjà un hash Bcrypt si on l'appelle depuis le contrôleur.
-     */
-    public static function create(array $data): int
-    {
-        $pdo = Database::getInstance();
-        $stmt = $pdo->prepare(
-            "INSERT INTO users (username, email, password, fullname, role)
-             VALUES (:u, :e, :p, :f, :r)"
-        );
-        $stmt->execute([
-            'u' => $data['username'],
-            'e' => $data['email'],
-            // On reçoit $data['password'] déjà haché en amont :
-            'p' => $data['password'],
-            'f' => $data['fullname'] ?? null,
-            'r' => $data['role'] ?? 'user',
-        ]);
-        return (int)$pdo->lastInsertId();
-    }
-
-    /**
      * Récupère tous les utilisateurs (pour lister en back‐office)
      */
     public static function all(): array
@@ -59,6 +36,31 @@ class User
         $stmt = Database::getInstance()
             ->query("SELECT * FROM users ORDER BY created_at DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Crée un nouvel utilisateur
+     *
+     * Attente : $data['password'] est déjà haché en amont.
+     */
+    public static function create(array $data): int
+    {
+        $pdo = Database::getInstance();
+        $stmt = $pdo->prepare(
+            "INSERT INTO users 
+               (username, email, password, fullname, role, avatar)
+             VALUES 
+               (:u, :e, :p, :f, :r, :a)"
+        );
+        $stmt->execute([
+            'u' => $data['username'],  
+            'e' => $data['email'],     
+            'p' => $data['password'],  
+            'f' => $data['fullname'] ?? null,
+            'r' => $data['role'] ?? 'user',
+            'a' => $data['avatar'] ?? null,
+        ]);
+        return (int)$pdo->lastInsertId();
     }
 
     /**
@@ -72,7 +74,7 @@ class User
         $sets   = [];
         $params = [];
 
-        foreach (['username','email','fullname','role'] as $field) {
+        foreach (['username', 'email', 'fullname', 'role'] as $field) {
             if (array_key_exists($field, $data)) {
                 $sets[]         = "`$field` = :$field";
                 $params[$field] = $data[$field];
@@ -80,15 +82,22 @@ class User
         }
 
         if (isset($data['password'])) {
-            // Ici, on reçoit le mot de passe en clair => on le hache
-            $sets[]              = "`password` = :password";
-            $params['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+            $sets[]               = "`password` = :password";
+            $params['password']   = password_hash($data['password'], PASSWORD_BCRYPT);
+        }
+
+        if (array_key_exists('avatar', $data)) {
+            $sets[]              = "`avatar` = :avatar";
+            $params['avatar']    = $data['avatar'];
         }
 
         $params['id'] = $id;
-        $sql = "UPDATE users SET " . implode(', ', $sets) . " WHERE id = :id";
-        $stmt = Database::getInstance()->prepare($sql);
-        $stmt->execute($params);
+        $sql = "UPDATE users 
+                   SET " . implode(', ', $sets) . " 
+                 WHERE id = :id";
+        Database::getInstance()
+            ->prepare($sql)
+            ->execute($params);
     }
 
     /**

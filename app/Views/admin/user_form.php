@@ -10,6 +10,7 @@
                  ? '/admin/users/edit/'.$userToEdit['id']
                  : '/admin/users/create' ?>"
       method="post"
+      enctype="multipart/form-data"
       class="bg-white p-6 rounded shadow space-y-4">
 
   <label class="block">
@@ -43,6 +44,31 @@
         Admin
       </option>
     </select>
+  </label>
+
+  <label class="block">
+    Nom complet
+    <input type="text"
+           name="fullname"
+           value="<?= htmlspecialchars($userToEdit['fullname'] ?? '', ENT_QUOTES) ?>"
+           class="w-full border rounded p-2">
+  </label>
+
+  <?php if (!empty($userToEdit['avatar'])): ?>
+    <div class="block">
+      <span class="font-medium">Avatar actuel</span>
+      <img src="/<?= htmlspecialchars($userToEdit['avatar'], ENT_QUOTES) ?>"
+           alt="Avatar"
+           class="h-24 w-24 rounded-full object-cover mt-2 mb-4">
+    </div>
+  <?php endif; ?>
+
+  <label class="block">
+    Avatar
+    <input type="file"
+           name="avatar"
+           accept="image/jpeg,image/png"
+           class="mt-1">
   </label>
 
   <label class="block">
